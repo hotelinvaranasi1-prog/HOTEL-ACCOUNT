@@ -373,8 +373,10 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
       );
       alert("Email Sent Successfully");
     } catch (err: any) {
-      console.error("EmailJS Error:", err);
-      alert("Email Failed: " + (err.text || err.message || "An unknown error occurred"));
+      console.error("EmailJS Error details:", err);
+      const errorMessage = err?.text || err?.message || JSON.stringify(err) || "An unknown error occurred";
+      console.error("EmailJS full error:", errorMessage);
+      alert("Email Failed: " + errorMessage);
     } finally {
       setIsSendingEmail(false);
     }
