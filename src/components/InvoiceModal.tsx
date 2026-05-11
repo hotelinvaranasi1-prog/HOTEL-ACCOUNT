@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import emailjs from '@emailjs/browser';
 import { X, Loader2, Save, Printer, Download, Plus, Trash2, Send, Share2, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Invoice, InvoiceRoomRow, InvoiceSummaryData, InvoicePaymentData, Booking } from '../types';
@@ -437,30 +438,24 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
 
     setIsSendingEmail(true);
     try {
-      const doc = createInvoicePDF();
-      const pdfBase64 = doc.output('datauristring');
+      // Configuration
+      const SERVICE_ID = 'service_hsdjbbh';
+      const TEMPLATE_ID = 'template_o05xf7q';
+      const PUBLIC_KEY = 'uhEdPWW2ZOaHD9Km6';
 
-      const res = await fetch('/api/send-invoice-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: formData.guest_email,
-          subject: `Invoice from ${hotelDetails?.name || 'Hotel'} - ${formData.invoice_number || 'Receipt'}`,
-          text: `Dear ${formData.guest_name},\n\nPlease find attached the invoice for your stay.\n\nThank you for choosing us!\n\nBest regards,\n${hotelDetails?.name || 'Hotel Management'}`,
-          pdfBase64,
-          filename: `Invoice_${formData.invoice_number || 'Receipt'}.pdf`
-        })
-      });
+      const templateParams = {
+        guest_name: formData.guest_name,
+        hotel_name: hotelDetails?.name,
+        guest_email: formData.guest_email,
+        total_amount: formData.summary_data.netTotal,
+        invoice_number: formData.invoice_number,
+      };
 
-      const data = await res.json();
-      if (res.ok) {
-        alert("Invoice sent successfully to " + formData.guest_email);
-      } else {
-        throw new Error(data.error || "Failed to send email");
-      }
+      await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);
+      alert("Email Sent Successfully");
     } catch (err: any) {
       console.error(err);
-      alert("Error sending email: " + err.message);
+      alert("Email Failed");
     } finally {
       setIsSendingEmail(false);
     }

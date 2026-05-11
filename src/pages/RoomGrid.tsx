@@ -199,7 +199,7 @@ export default function RoomGrid() {
               <div key={key} className="space-y-4">
                 <h2 className="text-lg font-semibold text-slate-800">{hotel.name}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {filteredRooms.map((roomNumber) => {
+                  {filteredRooms.map((roomNumber, idx) => {
                     const room = rooms.find(r => String(r.number) === roomNumber);
                     const status = room?.status || 'Available';
                     const config = statusConfig[status];
@@ -207,7 +207,7 @@ export default function RoomGrid() {
                     
                     return (
                       <motion.button
-                        key={`${key}-${roomNumber}`}
+                        key={`${key}-${roomNumber}-${idx}`}
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.99 }}
                         onClick={() => setSelectedRoom(room || { id: 0, number: roomNumber, status: 'Available', type: 'Standard', floor: 'Ground', capacity: 2 })}
@@ -266,7 +266,7 @@ export default function RoomGrid() {
                               {booking.payment_history?.length > 0 ? (
                                 <div className="flex flex-wrap gap-1">
                                   {booking.payment_history.map((p, i) => (
-                                    <span key={`${p.timestamp}-${p.mode}-${p.amount}`} className="px-1.5 py-0.5 rounded bg-white border text-[10px] font-bold text-slate-600">
+                                    <span key={`payment-${booking.id}-${i}`} className="px-1.5 py-0.5 rounded bg-white border text-[10px] font-bold text-slate-600">
                                       {p.mode} ₹{p.amount}
                                     </span>
                                   ))}

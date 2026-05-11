@@ -123,8 +123,8 @@ export default function Schedule() {
 
             {/* Grid Body */}
             <div className="divide-y divide-slate-100">
-              {rooms.map((room) => (
-                <div key={`calendar-row-${room.hotel}-${room.number}`} className="flex group">
+              {rooms.map((room, rIdx) => (
+                <div key={`calendar-row-${rIdx}`} className="flex group">
                   <div className="w-40 flex-shrink-0 p-4 border-r border-slate-100 flex flex-col justify-center bg-white group-hover:bg-slate-50 transition-colors">
                     <span className="text-sm font-black text-slate-900 leading-none">Room {room.number}</span>
                     <span className="text-[10px] font-bold text-slate-400 uppercase mt-1">
@@ -136,7 +136,7 @@ export default function Schedule() {
                     
                     return (
                       <div 
-                        key={`calendar-cell-${room.hotel}-${room.number}-${idx}`}
+                        key={`calendar-cell-${rIdx}-${idx}`}
                         className={cn(
                           "flex-1 min-h-[60px] border-r border-slate-100 p-1 relative flex flex-col gap-1",
                           isSameDay(day, new Date()) && "bg-indigo-50/30"
