@@ -218,7 +218,7 @@ export default function Dashboard() {
                   </td>
                 </tr>
               ) : hotelBookings.map((booking, idx) => (
-                <tr key={booking.id} className="group hover:bg-slate-50 transition-colors">
+                <tr key={`${booking.id}-${idx}`} className="group hover:bg-slate-50 transition-colors">
                   <td className="py-4">
                     <span className="px-3 py-1.5 bg-slate-100 rounded-lg font-black text-slate-700">{booking.room_number}</span>
                   </td>

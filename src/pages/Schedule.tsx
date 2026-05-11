@@ -27,6 +27,8 @@ export default function Schedule() {
 
   useEffect(() => {
     fetchBookingsData();
+    const interval = setInterval(fetchBookingsData, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   const days = eachDayOfInterval({
@@ -43,16 +45,22 @@ export default function Schedule() {
       if (b.room_number !== roomNumber) return false;
       const checkIn = b.check_in ? parseISO(b.check_in) : parseISO(b.date);
       const checkOut = b.check_out ? parseISO(b.check_out) : addDays(checkIn, 1);
-      return (isSameDay(date, checkIn) || (date > checkIn && date < checkOut));
+      
+      // Use isSameDay to check inclusion
+      return isSameDay(date, checkIn) || (date > checkIn && date < checkOut);
     });
   };
 
-  const getBookingColor = (id: number) => {
-    const colors = [
-      'bg-indigo-600', 'bg-emerald-600', 'bg-rose-600', 'bg-amber-600', 
-      'bg-violet-600', 'bg-pink-600', 'bg-cyan-600', 'bg-orange-600'
-    ];
-    return colors[id % colors.length];
+  const getBookingClass = (bookings: Booking[]) => {
+    if (bookings.length === 0) return 'bg-white';
+    const allPaid = bookings.every(b => (b.total_amount || 0) <= ((b.cash_paid || 0) + (b.online_paid || 0)));
+    
+    if (bookings.length === 1) {
+      return allPaid ? 'bg-emerald-600' : 'bg-rose-600';
+    } else {
+      // If > 1, it's a conflict/same room, same day
+      return allPaid ? 'bg-indigo-600' : 'bg-rose-600';
+    }
   };
 
   return (
@@ -138,10 +146,10 @@ export default function Schedule() {
                           const isStart = booking.check_in ? isSameDay(day, parseISO(booking.check_in)) : isSameDay(day, parseISO(booking.date));
                           return (
                             <div 
-                              key={`cell-booking-${booking.id}-${bIdx}`}
+                              key={`cell-booking-${booking.id}-${format(day, 'yyyy-MM-dd')}`}
                               className={cn(
                                 "flex-1 rounded-md text-[9px] font-bold p-1 overflow-hidden transition-all shadow-sm flex flex-col justify-center text-white",
-                                getBookingColor(booking.id),
+                                getBookingClass(dayBookings),
                                 !isStart && "opacity-90"
                               )}
                             >

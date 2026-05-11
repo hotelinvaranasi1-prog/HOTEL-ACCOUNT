@@ -28,6 +28,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
     ota_source: booking?.ota_source || '',
     room_price: booking?.room_price || 0,
     misc_charges: booking?.misc_charges || 0,
+    discount: booking?.discount || 0,
     total_amount: booking?.total_amount || 0,
     cash_paid: booking?.cash_paid || 0,
     online_paid: booking?.online_paid || 0,
@@ -67,6 +68,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
         ota_source: booking.ota_source || '',
         room_price: booking.room_price || 0,
         misc_charges: booking.misc_charges || 0,
+        discount: booking.discount || 0,
         total_amount: booking.total_amount || 0,
         cash_paid: booking.cash_paid || 0,
         online_paid: booking.online_paid || 0,
@@ -96,6 +98,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
         ota_source: '',
         room_price: 0,
         misc_charges: 0,
+        discount: 0,
         total_amount: 0,
         cash_paid: 0,
         online_paid: 0,
@@ -130,7 +133,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
   }, [dateRange]);
 
   const nights = differenceInDays(parseISO(formData.check_out), parseISO(formData.check_in)) || 1;
-  const totalAmount = (Number(formData.room_price) || 0) + (Number(formData.misc_charges) || 0);
+  const totalAmount = (Number(formData.room_price) || 0) + (Number(formData.misc_charges) || 0) - (Number(formData.discount) || 0);
   const totalPaid = (Number(formData.cash_paid) || 0) + (Number(formData.online_paid) || 0);
   const balanceAmount = totalAmount - totalPaid;
   
@@ -379,6 +382,15 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                         type="number"
                         value={formData.misc_charges}
                         onChange={e => setFormData({ ...formData, misc_charges: Number(e.target.value) })}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Discount</label>
+                      <input
+                        type="number"
+                        value={formData.discount}
+                        onChange={e => setFormData({ ...formData, discount: Number(e.target.value) })}
                         className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
                       />
                     </div>

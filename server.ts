@@ -39,7 +39,9 @@ let db: admin.firestore.Firestore | null = null;
 function getDb() {
   if (!db) {
     try {
-      if (!admin.apps.length) {
+      // Check if apps already initialized safely
+      const isInitialized = admin.apps && admin.apps.length > 0;
+      if (!isInitialized) {
         admin.initializeApp({
           credential: admin.credential.applicationDefault(),
           projectId: firebaseConfig.projectId

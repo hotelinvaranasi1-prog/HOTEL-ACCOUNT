@@ -52,6 +52,7 @@ export default function VoiceAssistant({ onNavigate }: VoiceAssistantProps) {
         ota_source: details.ota_source || '',
         room_price: details.room_price,
         misc_charges: 0,
+        discount: 0,
         total_amount: details.room_price,
         cash_paid: 0,
         online_paid: 0,

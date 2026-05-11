@@ -5,7 +5,7 @@ import { Invoice, InvoiceRoomRow, InvoiceSummaryData, InvoicePaymentData, Bookin
 import { formatCurrency, cn } from '../lib/utils';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { getSettings, createInvoice, updateInvoice } from '../services/firebaseService';
+import { getSettings, createInvoice, updateInvoice, updateBooking } from '../services/firebaseService';
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -24,14 +24,11 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
     invoice_number: '',
     invoice_date: new Date().toISOString().split('T')[0],
     guest_name: '',
-    guest_address: '',
     guest_phone: '',
     guest_email: '',
     booking_source: 'Walk In',
     check_in: '',
     check_out: '',
-    arrival_time: '12:00',
-    checkout_time: '11:00',
     adults: 1,
     children: 0,
     room_data: [
@@ -121,6 +118,11 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
           card: 0,
           totalPaid: (booking.cash_paid || 0) + (booking.online_paid || 0),
           dueAmount: booking.balance_amount || 0
+        },
+        summary_data: {
+          ...formData.summary_data,
+          extraCharges: booking.misc_charges || 0,
+          discount: booking.discount || 0
         }
       });
     }
@@ -182,6 +184,17 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
       } else {
         await createInvoice(formData);
       }
+
+      if (formData.booking_id) {
+        // Find existing booking to get other fields
+        // Since we don't have the full booking object easily, just update the fields we know
+        await updateBooking(formData.booking_id, {
+          misc_charges: formData.summary_data.extraCharges,
+          discount: formData.summary_data.discount,
+          total_amount: formData.summary_data.netTotal
+        });
+      }
+
       onSave();
       onClose();
     } catch (err) {
@@ -301,8 +314,7 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
     autoTable(doc, {
       startY: currentY - 6,
       body: [
-        ['Check-In:', formData.arrival_time || '12:00', 'Check-Out:', formData.checkout_time || '11:00'],
-        ['Arrival Date:', formData.check_in || '02-Mar-2026', 'Departure Date:', formData.check_out || '05-Mar-2026'],
+        ['Check-In:', formData.check_in || '', 'Check-Out:', formData.check_out || ''],
         ['No Of Nights:', (formData.room_data[0]?.nights || 1).toString(), 'No Of Adults:', (formData.adults || 2).toString()]
       ],
       theme: 'grid',
@@ -546,13 +558,6 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
                   onChange={(e) => setFormData({ ...formData, guest_email: e.target.value })}
                   className="px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
                 />
-                <input
-                  type="text"
-                  placeholder="Address"
-                  value={formData.guest_address || ''}
-                  onChange={(e) => setFormData({ ...formData, guest_address: e.target.value })}
-                  className="px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold col-span-2"
-                />
                 <div className="flex gap-4 col-span-2">
                    <div className="flex-1">
                      <p className="text-[10px] text-slate-400 font-bold mb-1 ml-1 px-2">Check-in</p>
@@ -562,13 +567,6 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
                             value={formData.check_in || ''}
                             onChange={(e) => setFormData({ ...formData, check_in: e.target.value })}
                             className="flex-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Time"
-                            value={formData.arrival_time || ''}
-                            onChange={(e) => setFormData({ ...formData, arrival_time: e.target.value })}
-                            className="w-20 px-3 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
                         />
                      </div>
                    </div>
@@ -580,13 +578,6 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
                             value={formData.check_out || ''}
                             onChange={(e) => setFormData({ ...formData, check_out: e.target.value })}
                             className="flex-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Time"
-                            value={formData.checkout_time || ''}
-                            onChange={(e) => setFormData({ ...formData, checkout_time: e.target.value })}
-                            className="w-20 px-3 py-3 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
                         />
                      </div>
                    </div>
@@ -621,31 +612,27 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
                   <thead>
                     <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">
                       <th className="px-4 py-3">Description</th>
-                      <th className="px-4 py-3">Date</th>
                       <th className="px-4 py-3">Price</th>
-                      <th className="px-4 py-3">Qty/Nights</th>
+                      <th className="px-4 py-3">Nights</th>
                       <th className="px-4 py-3">Total</th>
                       <th className="px-4 py-3"></th>
                     </tr>
                   </thead>
                   <tbody className="space-y-2">
                     {formData.room_data.map((room: any, index: number) => (
-                      <tr key={`invoice-room-row-${index}-${room.type}`} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                      <tr key={`invoice-room-row-${index}`} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                         <td className="px-4 py-2">
-                          <input
-                            type="text"
-                            value={room.type || ''}
+                          <select
+                            value={room.type || 'Bedroom Deluxe'}
                             onChange={(e) => handleRoomDataChange(index, 'type', e.target.value)}
                             className="w-full bg-transparent border-none text-sm font-bold focus:ring-0 outline-none"
-                          />
-                        </td>
-                        <td className="px-4 py-2">
-                          <input
-                            type="date"
-                            value={room.date || ''}
-                            onChange={(e) => handleRoomDataChange(index, 'date', e.target.value)}
-                            className="bg-transparent border-none text-xs font-bold focus:ring-0 outline-none text-slate-500"
-                          />
+                          >
+                            <option value="Bedroom Deluxe">Bedroom Deluxe</option>
+                            <option value="Standard Room">Standard Room</option>
+                            <option value="Quadruple Room">Quadruple Room</option>
+                            <option value="Family Room">Family Room</option>
+                            <option value="Extra Item">Extra Item</option>
+                          </select>
                         </td>
                         <td className="px-4 py-2">
                           <input

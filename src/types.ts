@@ -35,6 +35,7 @@ export interface Booking {
   
   room_price: number;
   misc_charges: number;
+  discount: number;
   total_amount: number;
   
   cash_paid: number;
