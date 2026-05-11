@@ -4,47 +4,94 @@ import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
-import admin from "firebase-admin";
+import * as admin from "firebase-admin";
+import * as OneSignal from 'onesignal-node';
+import fs from "fs";
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Initialize Firebase Admin
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault()
-  });
+// Load Firebase Config
+const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+let firebaseConfig: any = {};
+if (fs.existsSync(configPath)) {
+  firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 }
-const db = admin.firestore();
+
+// Initialize OneSignal Client
+let onesignalClient: OneSignal.Client | null = null;
+const getOneSignalClient = () => {
+  if (!onesignalClient) {
+    const appId = process.env.VITE_ONESIGNAL_APP_ID;
+    const apiKey = process.env.ONESIGNAL_REST_API_KEY;
+    if (appId && apiKey) {
+      onesignalClient = new OneSignal.Client(appId, apiKey);
+    }
+  }
+  return onesignalClient;
+};
+
+// Initialize Firebase Admin
+let db: admin.firestore.Firestore | null = null;
+
+function getDb() {
+  if (!db) {
+    try {
+      if (!admin.apps.length) {
+        admin.initializeApp({
+          credential: admin.credential.applicationDefault(),
+          projectId: firebaseConfig.projectId
+        });
+      }
+      db = admin.firestore();
+    } catch (err) {
+      console.error("Failed to initialize Firebase Admin:", err);
+    }
+  }
+  return db;
+}
 
 // Seed rooms if empty
 async function seedRooms() {
+  console.log("Checking for missing rooms in database...");
+  const database = getDb();
+  if (!database) {
+    console.warn("Skipping seedRooms: database not initialized");
+    return;
+  }
   try {
-    const snapshot = await db.collection('rooms').limit(1).get();
-    if (snapshot.empty) {
-      console.log("Seeding rooms into Firebase...");
-      const batch = db.batch();
-      const rooms = [];
-      for (let i = 101; i <= 110; i++) rooms.push(i.toString());
-      for (let i = 201; i <= 210; i++) rooms.push(i.toString());
-      rooms.push('301', '302');
+    const desiredRooms = [
+      '101', '102', '103', '104', '105',
+      '201', '202', '203', '204', '205', '301', '302'
+    ];
+    
+    const snapshot = await database.collection('rooms').get();
+    const existingRoomNumbers = snapshot.docs.map(doc => doc.id);
+    const missingRooms = desiredRooms.filter(r => !existingRoomNumbers.includes(r));
 
-      for (const roomNumber of rooms) {
-        const roomRef = db.collection('rooms').doc(roomNumber);
+    if (missingRooms.length > 0) {
+      console.log("Seeding missing rooms into Firebase:", missingRooms);
+      const batch = database.batch();
+      for (const roomNumber of missingRooms) {
+        const roomRef = database.collection('rooms').doc(roomNumber);
         batch.set(roomRef, { number: roomNumber, status: 'Available' });
       }
       await batch.commit();
-      console.log("Rooms seeded successfully.");
+      console.log("Missing rooms seeded successfully.");
+    } else {
+      console.log("All rooms already exist in database.");
     }
   } catch (err) {
     console.error("Error seeding rooms:", err);
   }
 }
-seedRooms();
 
 async function startServer() {
+  // Call seedRooms in background
+  seedRooms();
+
   const app = express();
   app.use(express.json());
 
@@ -53,7 +100,9 @@ async function startServer() {
   // Rooms
   app.get("/api/rooms", async (req, res) => {
     try {
-      const snapshot = await db.collection('rooms').get();
+      const database = getDb();
+      if (!database) throw new Error("Database not initialized");
+      const snapshot = await database.collection('rooms').get();
       const rooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       res.json(rooms);
     } catch (err: any) {
@@ -65,7 +114,9 @@ async function startServer() {
     const { number } = req.params;
     const { status } = req.body;
     try {
-      const snapshot = await db.collection('rooms').where('number', '==', number).limit(1).get();
+      const database = getDb();
+      if (!database) throw new Error("Database not initialized");
+      const snapshot = await database.collection('rooms').where('number', '==', number).limit(1).get();
       if (!snapshot.empty) {
         await snapshot.docs[0].ref.update({ status });
       }
@@ -78,7 +129,9 @@ async function startServer() {
   // Bookings
   app.get("/api/bookings", async (req, res) => {
     try {
-      const snapshot = await db.collection('bookings').orderBy('date', 'desc').get();
+      const database = getDb();
+      if (!database) throw new Error("Database not initialized");
+      const snapshot = await database.collection('bookings').orderBy('date', 'desc').get();
       const bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       res.json(bookings);
     } catch (err: any) {
@@ -89,7 +142,9 @@ async function startServer() {
   // Settings
   app.get("/api/settings", async (req, res) => {
     try {
-      const doc = await db.collection('settings').doc('config').get();
+      const database = getDb();
+      if (!database) throw new Error("Database not initialized");
+      const doc = await database.collection('settings').doc('config').get();
       res.json(doc.exists ? doc.data() : {});
     } catch (err: any) {
       res.status(500).json({ error: err.message });
@@ -98,9 +153,38 @@ async function startServer() {
 
   app.post("/api/settings", async (req, res) => {
     try {
-      await db.collection('settings').doc('config').set(req.body, { merge: true });
+      const database = getDb();
+      if (!database) throw new Error("Database not initialized");
+      await database.collection('settings').doc('config').set(req.body, { merge: true });
       res.json({ success: true });
     } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/notify-booking", async (req, res) => {
+    const b = req.body;
+    const client = getOneSignalClient();
+    
+    if (!client) {
+      return res.status(500).json({ error: "OneSignal not configured" });
+    }
+
+    try {
+      const notification = {
+        contents: {
+          en: `New booking: Room ${b.room_number || 'N/A'} for ${b.guest_name || 'Guest'}. Amount: ₹${b.total_amount || 0}`,
+        },
+        headings: {
+          en: "🏨 New Reservation",
+        },
+        included_segments: ["All"],
+      };
+
+      await client.createNotification(notification);
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("OneSignal notification error:", err);
       res.status(500).json({ error: err.message });
     }
   });

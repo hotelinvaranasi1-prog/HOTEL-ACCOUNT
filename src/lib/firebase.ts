@@ -11,14 +11,6 @@ export const googleProvider = new GoogleAuthProvider();
 export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
 
 export const initFirebase = async () => {
-  try {
-    // Validate connection without blocking the app
-    getDocFromServer(doc(db, 'test', 'connection')).catch(error => {
-      if(error instanceof Error && error.message.includes('the client is offline')) {
-        console.error("Please check your Firebase configuration or internet connection.");
-      }
-    });
-  } catch (error) {
-    console.error("Firebase init failed:", error);
-  }
+  // Firebase initialization is handled by initializeApp
+  console.log("Firebase initialized");
 };

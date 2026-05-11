@@ -116,8 +116,8 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
           }
         ],
         payment_data: {
-          cash: booking.cash_paid || 0,
-          upi: booking.online_paid || 0,
+          cash: 0, 
+          upi: 0,
           card: 0,
           totalPaid: (booking.cash_paid || 0) + (booking.online_paid || 0),
           dueAmount: booking.balance_amount || 0

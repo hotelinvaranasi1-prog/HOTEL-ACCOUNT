@@ -80,84 +80,44 @@ export const getBookings = async (): Promise<Booking[]> => {
   try {
     const q = query(collection(db, path), orderBy('created_at', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as any));
+    return snapshot.docs.map(d => ({ ...d.data(), id: d.id } as any));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
     return [];
   }
 };
 
-export const createBooking = async (bookingData: any) => {
+export const createBooking = async (bookingData: Booking) => {
   const path = 'bookings';
   try {
-    // Add server timestamp and calculated fields
-    const total_amount = (Number(bookingData.room_price) || 0) + (Number(bookingData.misc_charges) || 0);
-    const balance_amount = total_amount - (Number(bookingData.cash_paid) || 0) - (Number(bookingData.online_paid) || 0);
-    const payment_status = balance_amount <= 0 ? 'Paid' : 'Unpaid';
-    
-    let commission_amount = 0;
-    let gst_amount = 0;
-    let net_income = total_amount;
-
-    if (bookingData.booking_type === 'OTA') {
-      commission_amount = Number(bookingData.commission_amount) || 0;
-      gst_amount = 0;
-      net_income = total_amount - commission_amount;
-    }
-
+    const { id, ...data } = bookingData;
     const docRef = await addDoc(collection(db, path), {
-      ...bookingData,
-      total_amount,
-      balance_amount,
-      payment_status,
-      commission_amount,
-      gst_amount,
-      net_income,
-      booking_status: 'Active',
-      created_at: new Date().toISOString() // Or serverTimestamp() if rules allow
+      ...data,
+      created_at: new Date().toISOString()
     });
-
     // Update room status
     await updateRoomStatus(bookingData.room_number, 'Occupied');
-
-    // Notify server for Telegram (optional, if we want to keep server-side logic)
-    fetch('/api/notify-booking', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...bookingData, total_amount, payment_status, id: docRef.id })
-    }).catch(console.error);
-
     return docRef.id;
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);
   }
 };
 
-export const updateBooking = async (id: string, bookingData: any) => {
+export const updateBooking = async (id: string, bookingData: Partial<Booking>) => {
   const path = `bookings/${id}`;
   try {
-    const total_amount = (Number(bookingData.room_price) || 0) + (Number(bookingData.misc_charges) || 0);
-    const balance_amount = total_amount - (Number(bookingData.cash_paid) || 0) - (Number(bookingData.online_paid) || 0);
-    const payment_status = balance_amount <= 0 ? 'Paid' : 'Unpaid';
-    
-    let net_income = total_amount;
-    if (bookingData.booking_type === 'OTA') {
-      net_income = total_amount - (Number(bookingData.commission_amount) || 0);
-    }
-
-    await updateDoc(doc(db, 'bookings', id), {
-      ...bookingData,
-      total_amount,
-      balance_amount,
-      payment_status,
-      net_income
-    });
+    const { id: _, ...data } = bookingData;
+    await updateDoc(doc(db, 'bookings', id), data);
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
   }
 };
 
 export const deleteBooking = async (id: string) => {
+  if (!id) {
+    console.error('Attempted to delete booking with invalid id');
+    return;
+  }
   const path = `bookings/${id}`;
   try {
     await deleteDoc(doc(db, 'bookings', id));
@@ -172,7 +132,7 @@ export const getInvoices = async (): Promise<Invoice[]> => {
   try {
     const q = query(collection(db, path), orderBy('created_at', 'desc'));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(d => ({ id: d.id, ...d.data() } as any));
+    return snapshot.docs.map(d => ({ ...d.data(), id: d.id } as any));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
     return [];
@@ -182,8 +142,9 @@ export const getInvoices = async (): Promise<Invoice[]> => {
 export const createInvoice = async (invoiceData: any) => {
   const path = 'invoices';
   try {
+    const { id, ...data } = invoiceData;
     const docRef = await addDoc(collection(db, path), {
-      ...invoiceData,
+      ...data,
       created_at: new Date().toISOString()
     });
     return docRef.id;
@@ -195,8 +156,9 @@ export const createInvoice = async (invoiceData: any) => {
 export const updateInvoice = async (id: string, invoiceData: any) => {
   const path = `invoices/${id}`;
   try {
+    const { id: _, ...data } = invoiceData;
     await updateDoc(doc(db, 'invoices', id), {
-      ...invoiceData,
+      ...data,
       updated_at: new Date().toISOString()
     });
   } catch (error) {

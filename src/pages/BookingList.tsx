@@ -71,14 +71,24 @@ export default function BookingList() {
 
   const handleQuickPay = async (b: Booking, method: 'cash' | 'online', amount: number) => {
     try {
-      const currentCash = method === 'cash' ? (b.cash_paid || 0) + amount : (b.cash_paid || 0);
-      const currentOnline = method === 'online' ? (b.online_paid || 0) + amount : (b.online_paid || 0);
+      const newPaymentHistory = [...(b.payment_history || []), {
+        mode: method === 'cash' ? 'Cash' : 'Online',
+        amount: amount,
+        timestamp: new Date().toISOString()
+      }];
+      const newTotalPaid = (method === 'cash' ? (b.cash_paid || 0) : (b.online_paid || 0)) + amount;
+      const newCashPaid = method === 'cash' ? (b.cash_paid || 0) + amount : (b.cash_paid || 0);
+      const newOnlinePaid = method === 'online' ? (b.online_paid || 0) + amount : (b.online_paid || 0);
+      const newBalanceAmount = b.total_amount - (newCashPaid + newOnlinePaid);
       
       await updateBooking(String(b.id), {
         ...b,
-        cash_paid: currentCash,
-        online_paid: currentOnline
-      });
+        cash_paid: newCashPaid,
+        online_paid: newOnlinePaid,
+        payment_history: newPaymentHistory,
+        balance_amount: newBalanceAmount,
+        payment_status: newBalanceAmount <= 0 ? 'Paid' : 'Partial'
+      } as Booking);
       setQuickPayBooking(null);
       fetchBookingsData();
     } catch (err) {

@@ -57,9 +57,13 @@ export default function VoiceAssistant({ onNavigate }: VoiceAssistantProps) {
       }
 
       await createBooking({
+        id: 'temp-' + Date.now().toString(),
         date: new Date().toISOString().split('T')[0],
+        check_in: new Date().toISOString().split('T')[0],
+        check_out: new Date(Date.now() + 86400000).toISOString().split('T')[0],
         room_number: details.room_number,
         guest_name: details.guest_name,
+        guest_phone: '',
         booking_type: details.booking_type,
         ota_source: details.ota_source || '',
         room_price: details.room_price,
@@ -67,12 +71,14 @@ export default function VoiceAssistant({ onNavigate }: VoiceAssistantProps) {
         total_amount: details.room_price,
         cash_paid: 0,
         online_paid: 0,
+        payment_history: [],
+        payment_status: 'Unpaid',
         balance_amount: details.room_price,
         commission_amount: 0,
-        gst_amount: 0,
-        net_income: details.room_price,
+        net_profit: details.room_price,
         booking_status: 'Active',
-        payment_status: 'Unpaid',
+        gst_invoice_status: 'Pending',
+        created_at: new Date().toISOString(),
       });
 
       setFeedback(`Successfully reserved Room ${details.room_number} for ${details.guest_name}!`);

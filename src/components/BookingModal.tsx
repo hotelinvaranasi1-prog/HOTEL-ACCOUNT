@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, Save, Calculator, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Booking, BookingType, PaymentStatus, BookingStatus } from '../types';
+import { Booking, BookingType, PaymentStatus, BookingStatus, PaymentMode } from '../types';
 import { cn } from '../lib/utils';
 import { format, differenceInDays, parseISO, addDays, isSameDay } from 'date-fns';
 import { DayPicker, DateRange } from 'react-day-picker';
@@ -16,22 +16,32 @@ interface BookingModalProps {
 }
 
 export default function BookingModal({ isOpen, onClose, roomNumber, booking }: BookingModalProps) {
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    check_in: new Date().toISOString().split('T')[0],
-    check_out: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+  const [formData, setFormData] = useState<Booking>({
+    id: booking?.id || '',
+    date: booking?.date || new Date().toISOString().split('T')[0],
+    check_in: booking?.check_in || new Date().toISOString().split('T')[0],
+    check_out: booking?.check_out || new Date(Date.now() + 86400000).toISOString().split('T')[0],
     room_number: roomNumber,
-    guest_name: '',
-    booking_type: 'Walk-in' as BookingType,
-    ota_source: 'Booking.com',
-    room_price: 0,
-    misc_charges: 0,
-    cash_paid: 0,
-    online_paid: 0,
-    commission_amount: 0,
-    booking_status: 'Active' as BookingStatus,
-    payment_status: 'Unpaid' as PaymentStatus,
+    guest_name: booking?.guest_name || '',
+    guest_phone: booking?.guest_phone || '',
+    booking_type: booking?.booking_type || 'Walk-in',
+    ota_source: booking?.ota_source || '',
+    room_price: booking?.room_price || 0,
+    misc_charges: booking?.misc_charges || 0,
+    total_amount: booking?.total_amount || 0,
+    cash_paid: booking?.cash_paid || 0,
+    online_paid: booking?.online_paid || 0,
+    payment_history: booking?.payment_history || [],
+    payment_status: booking?.payment_status || 'Unpaid',
+    balance_amount: booking?.balance_amount || 0,
+    commission_amount: booking?.commission_amount || 0,
+    net_profit: booking?.net_profit || 0,
+    booking_status: booking?.booking_status || 'Active',
+    gst_invoice_status: booking?.gst_invoice_status || 'Pending',
+    created_at: booking?.created_at || new Date().toISOString(),
   });
+
+  const [initialPaymentMode, setInitialPaymentMode] = useState<PaymentMode>('Cash');
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(),
@@ -44,32 +54,60 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
 
   useEffect(() => {
     if (booking) {
-      const checkIn = booking.check_in || booking.date;
-      const checkOut = booking.check_out || new Date(new Date(booking.date).getTime() + 86400000).toISOString().split('T')[0];
-      
       setFormData({
-        date: booking.date,
-        check_in: checkIn,
-        check_out: checkOut,
-        room_number: booking.room_number,
-        guest_name: booking.guest_name,
-        booking_type: booking.booking_type,
-        ota_source: booking.ota_source || 'Booking.com',
-        room_price: booking.room_price,
-        misc_charges: booking.misc_charges,
-        cash_paid: booking.cash_paid,
-        online_paid: booking.online_paid,
-        commission_amount: booking.commission_amount,
-        booking_status: booking.booking_status,
-        payment_status: booking.payment_status,
+        ...booking,
+        id: booking.id || '',
+        date: booking.date || new Date().toISOString().split('T')[0],
+        check_in: booking.check_in || new Date().toISOString().split('T')[0],
+        check_out: booking.check_out || new Date(Date.now() + 86400000).toISOString().split('T')[0],
+        room_number: booking.room_number || '',
+        guest_name: booking.guest_name || '',
+        guest_phone: booking.guest_phone || '',
+        booking_type: booking.booking_type || 'Walk-in',
+        ota_source: booking.ota_source || '',
+        room_price: booking.room_price || 0,
+        misc_charges: booking.misc_charges || 0,
+        total_amount: booking.total_amount || 0,
+        cash_paid: booking.cash_paid || 0,
+        online_paid: booking.online_paid || 0,
+        payment_history: booking.payment_history || [],
+        payment_status: booking.payment_status || 'Unpaid',
+        balance_amount: booking.balance_amount || 0,
+        commission_amount: booking.commission_amount || 0,
+        net_profit: booking.net_profit || 0,
+        booking_status: booking.booking_status || 'Active',
+        gst_invoice_status: booking.gst_invoice_status || 'Pending',
+        created_at: booking.created_at || new Date().toISOString(),
       });
-
       setDateRange({
-        from: parseISO(checkIn),
-        to: parseISO(checkOut)
+        from: parseISO(booking.check_in),
+        to: parseISO(booking.check_out)
       });
     } else {
-      setFormData(prev => ({ ...prev, room_number: roomNumber }));
+      setFormData({
+        id: '',
+        date: new Date().toISOString().split('T')[0],
+        check_in: new Date().toISOString().split('T')[0],
+        check_out: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+        room_number: roomNumber,
+        guest_name: '',
+        guest_phone: '',
+        booking_type: 'Walk-in',
+        ota_source: '',
+        room_price: 0,
+        misc_charges: 0,
+        total_amount: 0,
+        cash_paid: 0,
+        online_paid: 0,
+        payment_history: [],
+        payment_status: 'Unpaid',
+        balance_amount: 0,
+        commission_amount: 0,
+        net_profit: 0,
+        booking_status: 'Active',
+        gst_invoice_status: 'Pending',
+        created_at: new Date().toISOString(),
+      });
       setDateRange({
         from: new Date(),
         to: addDays(new Date(), 1)
@@ -93,7 +131,12 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
 
   const nights = differenceInDays(parseISO(formData.check_out), parseISO(formData.check_in)) || 1;
   const totalAmount = (Number(formData.room_price) || 0) + (Number(formData.misc_charges) || 0);
-  const balanceAmount = totalAmount - (Number(formData.cash_paid) || 0) - (Number(formData.online_paid) || 0);
+  const totalPaid = (Number(formData.cash_paid) || 0) + (Number(formData.online_paid) || 0);
+  const balanceAmount = totalAmount - totalPaid;
+  
+  // Auto Commission Calculator - Commission Amount is now input directly
+  const commissionAmount = Number(formData.commission_amount) || 0;
+  const netProfit = totalAmount - commissionAmount;
 
   const handleDelete = async () => {
     if (!booking) return;
@@ -112,10 +155,26 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
   const handleActualSubmit = async () => {
     setIsLoading(true);
     try {
+      const finalData = {
+        ...formData,
+        total_amount: totalAmount,
+        balance_amount: balanceAmount,
+        commission_amount: commissionAmount,
+        net_profit: netProfit,
+        payment_status: balanceAmount <= 0 ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Unpaid')
+      };
+
       if (booking) {
-        await updateBooking(String(booking.id), formData);
+        await updateBooking(String(booking.id), finalData as any);
       } else {
-        await createBooking(formData);
+        if (totalPaid > 0) {
+          finalData.payment_history = [{
+            mode: 'Mixed', // Representing both cash/online
+            amount: totalPaid,
+            timestamp: new Date().toISOString()
+          }];
+        }
+        await createBooking(finalData as any);
       }
       setShowConfirm(false);
       onClose();
@@ -241,15 +300,38 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Booking Type</label>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Guest Phone</label>
+                    <input
+                      type="tel"
+                      value={formData.guest_phone}
+                      onChange={e => setFormData({ ...formData, guest_phone: e.target.value })}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="+91 98765 43210"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 hidden">
+                    <label className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={false}
+                        onChange={() => {}}
+                        className="w-4 h-4 text-indigo-600 rounded"
+                      />
+                      <span className="text-sm font-bold text-slate-700">ID Uploaded</span>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-2">Booking Source</label>
                     <div className="flex gap-2">
-                      {['Walk-in', 'OTA'].map((type, idx) => (
+                       {['Walk-in', 'OTA'].map((type, idx) => (
                         <button
                           key={`booking-type-${type}-${idx}`}
                           type="button"
                           onClick={() => setFormData({ ...formData, booking_type: type as BookingType })}
                           className={cn(
-                            "flex-1 py-3 rounded-2xl font-bold border-2 transition-all",
+                            "flex-1 py-3 rounded-2xl font-bold border-2 transition-all text-sm",
                             formData.booking_type === type 
                               ? "bg-indigo-50 border-indigo-600 text-indigo-600"
                               : "bg-slate-50 border-slate-100 text-slate-400"
@@ -263,16 +345,19 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
 
                   {formData.booking_type === 'OTA' && (
                     <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">OTA Source</label>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">OTA Platform</label>
                       <select
                         value={formData.ota_source}
                         onChange={e => setFormData({ ...formData, ota_source: e.target.value })}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
                       >
+                        <option value="">Select Platform</option>
                         {otaSources.map((s, idx) => <option key={`ota-source-${s}-${idx}`} value={s}>{s}</option>)}
                       </select>
                     </motion.div>
                   )}
+
+
                 </div>
 
                 {/* Right Column: Financials */}
@@ -284,7 +369,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                         type="number"
                         value={formData.room_price}
                         onChange={e => setFormData({ ...formData, room_price: Number(e.target.value) })}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
                         required
                       />
                     </div>
@@ -294,18 +379,18 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                         type="number"
                         value={formData.misc_charges}
                         onChange={e => setFormData({ ...formData, misc_charges: Number(e.target.value) })}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
                       />
                     </div>
                   </div>
 
-                  <div className="bg-slate-900 p-6 rounded-3xl text-white">
+                  <div className="bg-slate-900 p-6 rounded-3xl text-white shadow-inner">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-slate-400 font-bold text-xs uppercase tracking-widest">Total Amount</span>
                       <span className="text-2xl font-black">₹{totalAmount}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-slate-400 font-bold text-xs uppercase tracking-widest">Balance</span>
+                      <span className="text-slate-400 font-bold text-xs uppercase tracking-widest">Balance Due</span>
                       <span className={cn("text-lg font-bold", balanceAmount > 0 ? "text-rose-400" : "text-emerald-400")}>
                         ₹{balanceAmount}
                       </span>
@@ -319,7 +404,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                         type="number"
                         value={formData.cash_paid}
                         onChange={e => setFormData({ ...formData, cash_paid: Number(e.target.value) })}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-emerald-600"
                       />
                     </div>
                     <div>
@@ -328,22 +413,33 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                         type="number"
                         value={formData.online_paid}
                         onChange={e => setFormData({ ...formData, online_paid: Number(e.target.value) })}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-emerald-600"
                       />
                     </div>
                   </div>
-
-                  {formData.booking_type === 'OTA' && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                      <label className="block text-sm font-bold text-slate-700 mb-2">OTA Commission Amount</label>
+                  
+                  <div>
+                      <label className="block text-sm font-bold text-slate-700 mb-2">Commission Amount</label>
                       <input
                         type="number"
                         value={formData.commission_amount}
                         onChange={e => setFormData({ ...formData, commission_amount: Number(e.target.value) })}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none"
-                        placeholder="Enter amount"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+                        placeholder="0"
                       />
-                    </motion.div>
+                    </div>
+
+                  {(commissionAmount > 0) && (
+                    <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100 flex justify-between items-center">
+                      <div>
+                        <p className="text-xs font-bold text-rose-400 uppercase tracking-widest">Comm Amount</p>
+                        <p className="text-lg font-black text-rose-600">-₹{commissionAmount}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Net Profit</p>
+                        <p className="text-lg font-black text-indigo-700">₹{netProfit}</p>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

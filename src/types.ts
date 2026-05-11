@@ -4,33 +4,60 @@ export interface Room {
   id: number;
   number: string;
   status: RoomStatus;
+  type: string;
+  floor: string;
+  capacity: number;
 }
 
 export type BookingType = 'Walk-in' | 'OTA';
-export type PaymentStatus = 'Paid' | 'Unpaid';
+export type PaymentStatus = 'Paid' | 'Unpaid' | 'Partial';
 export type BookingStatus = 'Active' | 'Cancelled' | 'Completed';
+export type PaymentMode = 'Cash' | 'UPI' | 'Card' | 'Online' | 'Mixed';
+
+export interface PaymentEntry {
+  mode: PaymentMode;
+  amount: number;
+  upi_ref?: string;
+  timestamp: string;
+}
 
 export interface Booking {
-  id: number;
+  id: string;
   date: string;
-  check_in?: string;
-  check_out?: string;
+  check_in: string;
+  check_out: string;
   room_number: string;
   guest_name: string;
+  guest_phone: string;
+  
   booking_type: BookingType;
-  ota_source?: string;
+  ota_source?: string; // e.g., Booking.com, Oyo
+  
   room_price: number;
   misc_charges: number;
   total_amount: number;
+  
   cash_paid: number;
   online_paid: number;
+  payment_history: PaymentEntry[];
+  payment_status: PaymentStatus; // Paid, Unpaid, Partial,
   balance_amount: number;
+  
   commission_amount: number;
-  gst_amount: number;
-  net_income: number;
-  payment_status: PaymentStatus;
+  net_profit: number;
+  
   booking_status: BookingStatus;
+  
+  gst_invoice_status: 'Pending' | 'Generated' | 'Not Required';
+  
   created_at: string;
+}
+
+export interface DailySummary {
+  today_collection_cash: number;
+  today_collection_online: number;
+  total_commission: number;
+  total_pending: number;
 }
 
 export interface Summary {

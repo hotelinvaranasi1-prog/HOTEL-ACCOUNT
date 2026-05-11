@@ -39,8 +39,14 @@ export default function Dashboard() {
       // Calculate summary from today's active bookings
       const summaryData: Summary = {
         total_revenue: activeToday.reduce((acc, curr) => acc + curr.total_amount, 0),
-        total_cash: activeToday.reduce((acc, curr) => acc + curr.cash_paid, 0),
-        total_online: activeToday.reduce((acc, curr) => acc + curr.online_paid, 0),
+        total_cash: activeToday.reduce((acc, curr) => {
+          const cash = curr.payment_history?.filter(p => p.mode === 'Cash').reduce((a, c) => a + c.amount, 0) || 0;
+          return acc + cash;
+        }, 0),
+        total_online: activeToday.reduce((acc, curr) => {
+          const online = curr.payment_history?.filter(p => p.mode === 'Online').reduce((a, c) => a + c.amount, 0) || 0;
+          return acc + online;
+        }, 0),
         ota_count: activeToday.filter(b => b.booking_type === 'OTA').length,
         walkin_count: activeToday.filter(b => b.booking_type === 'Walk-in').length,
         pending_payments: activeToday.reduce((acc, curr) => acc + curr.balance_amount, 0)
@@ -62,8 +68,14 @@ export default function Dashboard() {
     const filtered = hotelBookings.filter(b => getHotelByRoom(b.room_number) === hotelKey);
     return {
       revenue: filtered.reduce((acc, curr) => acc + curr.total_amount, 0),
-      cash: filtered.reduce((acc, curr) => acc + curr.cash_paid, 0),
-      online: filtered.reduce((acc, curr) => acc + curr.online_paid, 0),
+      cash: filtered.reduce((acc, curr) => {
+        const cash = curr.payment_history?.filter(p => p.mode === 'Cash').reduce((a, c) => a + c.amount, 0) || 0;
+        return acc + cash;
+      }, 0),
+      online: filtered.reduce((acc, curr) => {
+        const online = curr.payment_history?.filter(p => p.mode === 'Online').reduce((a, c) => a + c.amount, 0) || 0;
+        return acc + online;
+      }, 0),
       count: filtered.length
     };
   };
