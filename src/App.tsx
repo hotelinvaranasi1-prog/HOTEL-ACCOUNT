@@ -40,7 +40,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
       {/* Mobile Header */}
-      <div className="md:hidden bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-50">
+      <div style={{ height: '45.6667px' }} className="md:hidden bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <Hotel className="w-6 h-6 text-indigo-600" />
           <span className="font-bold text-lg text-slate-800">Hotel Master</span>
