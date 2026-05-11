@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   LayoutDashboard, 
   Grid3X3, 
   ListOrdered, 
   BarChart3, 
   Settings as SettingsIcon,
-  LogOut,
   Menu,
   X,
   Hotel,
@@ -18,7 +17,6 @@ import RoomGrid from './pages/RoomGrid';
 import BookingList from './pages/BookingList';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-import Login from './pages/Login';
 import InvoiceList from './pages/InvoiceList';
 import Schedule from './pages/Schedule';
 import VoiceAssistant from './components/VoiceAssistant';
@@ -26,18 +24,8 @@ import VoiceAssistant from './components/VoiceAssistant';
 type Page = 'dashboard' | 'room-grid' | 'schedule' | 'bookings' | 'reports' | 'settings' | 'invoices';
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  useEffect(() => {
-    const token = localStorage.getItem('staff-token');
-    if (token) setIsLoggedIn(true);
-  }, []);
-
-  if (!isLoggedIn) {
-    return <Login onLogin={() => setIsLoggedIn(true)} />;
-  }
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -48,11 +36,6 @@ export default function App() {
     { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
-
-  const handleLogout = () => {
-    localStorage.removeItem('staff-token');
-    setIsLoggedIn(false);
-  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
@@ -100,16 +83,6 @@ export default function App() {
               </button>
             ))}
           </nav>
-
-          <div className="p-4 border-t">
-            <button 
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              Logout
-            </button>
-          </div>
         </div>
       </aside>
 

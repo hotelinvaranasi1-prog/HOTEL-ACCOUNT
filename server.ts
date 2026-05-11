@@ -110,16 +110,6 @@ async function startServer() {
 
   // API Routes
   
-  // Auth (Simple)
-  app.post("/api/login", (req, res) => {
-    const { password } = req.body;
-    if (password === "admin123") { // Simple hardcoded password for staff
-      res.json({ success: true, token: "staff-token-123" });
-    } else {
-      res.status(401).json({ success: false, message: "Invalid password" });
-    }
-  });
-
   // Rooms
   app.get("/api/rooms", (req, res) => {
     const rooms = db.prepare("SELECT * FROM rooms").all();
