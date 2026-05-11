@@ -1,21 +1,18 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default Deny
+    // Default Allow (for now, as authentication is removed)
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
 
-    // Global Helpers
+    // Global Helpers (kept for compatibility, though currently always true)
     function isSignedIn() {
-      return request.auth != null;
+      return true;
     }
 
     function isStaff() {
-      return isSignedIn() && (
-        request.auth.token.email == 'hotelinvaranasi1@gmail.com' ||
-        request.auth.token.email_verified == true
-      );
+      return true;
     }
 
     function isValidId(id) {
@@ -37,8 +34,8 @@ service cloud.firestore {
                data.status in ['Available', 'Occupied', 'Cleaning', 'Maintenance'];
       }
 
-      allow read: if isStaff(); 
-      allow write: if isStaff() && isValidRoom(incoming());
+      allow read: if true; 
+      allow write: if isValidRoom(incoming());
     }
 
     // Bookings
@@ -50,24 +47,24 @@ service cloud.firestore {
                data.booking_status in ['Active', 'Cancelled', 'Completed'];
       }
 
-      allow read: if isStaff();
-      allow create: if isStaff() && isValidBooking(incoming());
-      allow update: if isStaff() && isValidBooking(incoming());
-      allow delete: if isStaff();
+      allow read: if true;
+      allow create: if isValidBooking(incoming());
+      allow update: if isValidBooking(incoming());
+      allow delete: if true;
     }
 
     // Invoices
     match /invoices/{invoiceId} {
-      allow read: if isStaff();
-      allow create: if isStaff();
-      allow update: if isStaff();
-      allow delete: if isStaff();
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
     }
 
     // Settings
     match /settings/{settingKey} {
-      allow read: if isStaff();
-      allow write: if isStaff();
+      allow read: if true;
+      allow write: if true;
     }
   }
 }
