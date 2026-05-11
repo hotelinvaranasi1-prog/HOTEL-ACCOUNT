@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #4f46e5;
+  --color-secondary: #0ea5e9;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+/* DayPicker Custom Styling */
+.rdp-custom {
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: #4f46e5;
+  --rdp-background-color: #e0e7ff;
+  margin: 0;
+}
+
+.rdp-custom .rdp-day_selected, 
+.rdp-custom .rdp-day_selected:focus-visible, 
+.rdp-custom .rdp-day_selected:hover {
+  background-color: var(--rdp-accent-color);
+  color: white !important;
+  border-radius: 12px;
+}
+
+.rdp-custom .rdp-day_range_middle {
+  background-color: var(--rdp-background-color) !important;
+  color: #4338ca !important;
+  border-radius: 0 !important;
+}
+
+.rdp-custom .rdp-day_range_start {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+.rdp-custom .rdp-day_range_end {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.rdp-custom .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: #f1f5f9;
+  border-radius: 12px;
+}
