@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Mic, MicOff, Loader2, Sparkles, AlertCircle, CalendarCheck2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
-import { GoogleGenAI, Type } from "@google/genai";
 import { createBooking } from '../services/firebaseService';
 
 // Declare global for SpeechRecognition
@@ -25,19 +24,6 @@ interface BookingDraft {
   room_price?: number;
 }
 
-const RESERVATION_SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    is_reservation: { type: Type.BOOLEAN, description: "Whether the user is trying to make a reservation" },
-    room_number: { type: Type.STRING },
-    guest_name: { type: Type.STRING },
-    booking_type: { type: Type.STRING, enum: ["Walk-in", "OTA"] },
-    ota_source: { type: Type.STRING },
-    room_price: { type: Type.NUMBER },
-    missing_info: { type: Type.STRING, description: "A friendly message asking for missing info, or empty if complete" }
-  }
-};
-
 export default function VoiceAssistant({ onNavigate }: VoiceAssistantProps) {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -47,8 +33,6 @@ export default function VoiceAssistant({ onNavigate }: VoiceAssistantProps) {
   const [bookingDraft, setBookingDraft] = useState<BookingDraft>({});
   const recognitionRef = useRef<any>(null);
   
-  const ai = useRef(new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }));
-
   const submitBooking = async (details: BookingDraft) => {
     setIsProcessing(true);
     try {
@@ -92,61 +76,6 @@ export default function VoiceAssistant({ onNavigate }: VoiceAssistantProps) {
     }
   };
 
-  const processWithAI = async (text: string) => {
-    setIsProcessing(true);
-    try {
-      const response = await ai.current.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Previous context: ${JSON.stringify(bookingDraft)}\nUser says: ${text}`,
-        config: {
-          systemInstruction: `You are a hotel receptionist. Extract reservation details: room_number, guest_name (capitalize), booking_type (Walk-in or OTA), ota_source (if OTA), and room_price. 
-          If details are missing, set them to null in JSON and provide a polite prompt in 'missing_info'.
-          If all details are present, set 'missing_info' to empty string.
-          Current booking context is provided in "Previous context". merge new info with old info.`,
-          responseMimeType: "application/json",
-          responseSchema: RESERVATION_SCHEMA
-        }
-      });
-
-      const result = JSON.parse(response.text || '{}');
-      
-      if (!result.is_reservation && !bookingDraft.room_number) {
-        // Not a reservation attempt and no active draft
-        setIsProcessing(false);
-        return false;
-      }
-
-      // Update draft with fresh info while keeping existing if new is null
-      const updatedDraft: BookingDraft = {
-        room_number: result.room_number || bookingDraft.room_number,
-        guest_name: result.guest_name || bookingDraft.guest_name,
-        booking_type: result.booking_type || bookingDraft.booking_type,
-        ota_source: result.ota_source || bookingDraft.ota_source,
-        room_price: result.room_price || bookingDraft.room_price,
-      };
-
-      setBookingDraft(updatedDraft);
-
-      if (result.missing_info) {
-        setFeedback(result.missing_info);
-      } else if (updatedDraft.room_number && updatedDraft.guest_name && updatedDraft.booking_type && updatedDraft.room_price) {
-        // Complete!
-        setFeedback(`Perfect. Saving reservation for ${updatedDraft.guest_name} in Room ${updatedDraft.room_number}...`);
-        await submitBooking(updatedDraft);
-      } else {
-        setFeedback("I've got some details. What's the rest of the info?");
-      }
-
-      return true;
-    } catch (err) {
-      console.error(err);
-      setError("AI processing failed. Please try again.");
-      return false;
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   const processCommand = useCallback(async (text: string) => {
     const cmd = text.toLowerCase();
     
@@ -182,9 +111,9 @@ export default function VoiceAssistant({ onNavigate }: VoiceAssistantProps) {
       return true;
     }
 
-    // AI Check for Reservations
-    return await processWithAI(text);
-  }, [onNavigate, bookingDraft, processWithAI]);
+    // AI Check for Reservations (Disabled)
+    return false;
+  }, [onNavigate, bookingDraft]);
 
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;

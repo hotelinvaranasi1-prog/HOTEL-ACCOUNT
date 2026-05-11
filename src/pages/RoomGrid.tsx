@@ -266,7 +266,7 @@ export default function RoomGrid() {
                               {booking.payment_history?.length > 0 ? (
                                 <div className="flex flex-wrap gap-1">
                                   {booking.payment_history.map((p, i) => (
-                                    <span key={`${p.timestamp}-${i}`} className="px-1.5 py-0.5 rounded bg-white border text-[10px] font-bold text-slate-600">
+                                    <span key={`${p.timestamp}-${p.mode}-${p.amount}`} className="px-1.5 py-0.5 rounded bg-white border text-[10px] font-bold text-slate-600">
                                       {p.mode} ₹{p.amount}
                                     </span>
                                   ))}
