@@ -3,6 +3,7 @@ import { Mic, MicOff, Loader2, Sparkles, AlertCircle, CalendarCheck2 } from 'luc
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { GoogleGenAI, Type } from "@google/genai";
+import { createBooking } from '../services/firebaseService';
 
 // Declare global for SpeechRecognition
 declare global {
@@ -51,37 +52,35 @@ export default function VoiceAssistant({ onNavigate }: VoiceAssistantProps) {
   const submitBooking = async (details: BookingDraft) => {
     setIsProcessing(true);
     try {
-      const res = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: new Date().toISOString().split('T')[0],
-          room_number: details.room_number,
-          guest_name: details.guest_name,
-          booking_type: details.booking_type,
-          ota_source: details.ota_source || '',
-          room_price: details.room_price,
-          misc_charges: 0,
-          total_amount: details.room_price,
-          cash_paid: 0,
-          online_paid: 0,
-          balance_amount: details.room_price,
-          commission_amount: 0,
-          gst_amount: 0,
-          net_income: details.room_price,
-        }),
+      if (!details.room_number || !details.guest_name || !details.booking_type || !details.room_price) {
+        throw new Error("Incomplete booking details");
+      }
+
+      await createBooking({
+        date: new Date().toISOString().split('T')[0],
+        room_number: details.room_number,
+        guest_name: details.guest_name,
+        booking_type: details.booking_type,
+        ota_source: details.ota_source || '',
+        room_price: details.room_price,
+        misc_charges: 0,
+        total_amount: details.room_price,
+        cash_paid: 0,
+        online_paid: 0,
+        balance_amount: details.room_price,
+        commission_amount: 0,
+        gst_amount: 0,
+        net_income: details.room_price,
+        booking_status: 'Active',
+        payment_status: 'Unpaid',
       });
 
-      if (res.ok) {
-        setFeedback(`Successfully reserved Room ${details.room_number} for ${details.guest_name}!`);
-        setBookingDraft({});
-        onNavigate('bookings');
-      } else {
-        const errorData = await res.json();
-        setError(`Failed to save: ${errorData.error || 'Server error'}`);
-      }
-    } catch (err) {
-      setError('Connection error while saving reservation.');
+      setFeedback(`Successfully reserved Room ${details.room_number} for ${details.guest_name}!`);
+      setBookingDraft({});
+      onNavigate('bookings');
+    } catch (err: any) {
+      console.error(err);
+      setError(`Failed to save: ${err.message || 'Unknown error'}`);
     } finally {
       setIsProcessing(false);
     }

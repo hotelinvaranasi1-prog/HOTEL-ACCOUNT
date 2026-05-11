@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Invoice } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import InvoiceModal from '../components/InvoiceModal';
+import { getInvoices, deleteInvoice } from '../services/firebaseService';
 
 export default function InvoiceList() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -33,11 +34,10 @@ export default function InvoiceList() {
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [statusFilter, setStatusFilter] = useState<'all' | 'paid' | 'pending'>('all');
 
-  const fetchInvoices = async () => {
+  const fetchInvoicesData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/invoices');
-      const data = await res.json();
+      const data = await getInvoices();
       setInvoices(data);
     } catch (err) {
       console.error(err);
@@ -47,14 +47,14 @@ export default function InvoiceList() {
   };
 
   useEffect(() => {
-    fetchInvoices();
+    fetchInvoicesData();
   }, []);
 
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this invoice?')) return;
     try {
-      const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
-      if (res.ok) fetchInvoices();
+      await deleteInvoice(String(id));
+      fetchInvoicesData();
     } catch (err) {
       console.error(err);
     }
@@ -311,7 +311,7 @@ export default function InvoiceList() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         invoice={selectedInvoice}
-        onSave={fetchInvoices}
+        onSave={fetchInvoicesData}
       />
     </div>
   );

@@ -19,6 +19,7 @@ import { Room, RoomStatus, Booking } from '../types';
 import { cn, formatCurrency } from '../lib/utils';
 import { HOTELS, getHotelByRoom } from '../constants';
 import BookingModal from '../components/BookingModal';
+import { getRooms, getBookings, updateRoomStatus, updateBooking } from '../services/firebaseService';
 
 export default function RoomGrid() {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -34,12 +35,10 @@ export default function RoomGrid() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [roomsRes, bookingsRes] = await Promise.all([
-        fetch('/api/rooms'),
-        fetch('/api/bookings')
+      const [roomsData, bookingsData] = await Promise.all([
+        getRooms(),
+        getBookings()
       ]);
-      const roomsData = await roomsRes.json();
-      const bookingsData = await bookingsRes.json();
       setRooms(roomsData);
       setBookings(bookingsData);
     } catch (err) {
@@ -55,11 +54,7 @@ export default function RoomGrid() {
 
   const handleStatusChange = async (roomNumber: string, newStatus: RoomStatus) => {
     try {
-      await fetch(`/api/rooms/${roomNumber}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
+      await updateRoomStatus(roomNumber, newStatus);
       fetchData();
       setSelectedRoom(null);
     } catch (err) {
@@ -72,19 +67,15 @@ export default function RoomGrid() {
     
     setIsProcessing(true);
     try {
-      const res = await fetch(`/api/bookings/${miscChargeBooking.id}/misc`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: Number(miscAmount) }),
+      const currentMisc = Number(miscChargeBooking.misc_charges) || 0;
+      await updateBooking(String(miscChargeBooking.id), {
+        ...miscChargeBooking,
+        misc_charges: currentMisc + Number(miscAmount)
       });
       
-      if (res.ok) {
-        setMiscChargeBooking(null);
-        setMiscAmount('');
-        fetchData();
-      } else {
-        alert('Failed to add miscellaneous charge');
-      }
+      setMiscChargeBooking(null);
+      setMiscAmount('');
+      fetchData();
     } catch (err) {
       console.error(err);
       alert('Error adding miscellaneous charge');
@@ -287,13 +278,14 @@ export default function RoomGrid() {
                         <button
                           onClick={async () => {
                             if (confirm('Are you sure you want to cancel this booking? This will also make the room available.')) {
-                              const res = await fetch(`/api/bookings/${getRoomBooking(selectedRoom.number)!.id}/cancel`, { method: 'POST' });
-                              if (res.ok) {
-                                fetchData();
-                                setSelectedRoom(null);
-                              } else {
-                                alert('Failed to cancel booking');
-                              }
+                              const booking = getRoomBooking(selectedRoom.number)!;
+                              await updateBooking(String(booking.id), {
+                                ...booking,
+                                booking_status: 'Cancelled'
+                              });
+                              await updateRoomStatus(selectedRoom.number, 'Available');
+                              fetchData();
+                              setSelectedRoom(null);
                             }
                           }}
                           className="w-full flex items-center justify-center gap-2 bg-rose-50 text-rose-600 py-4 rounded-2xl font-bold hover:bg-rose-100 transition-all"

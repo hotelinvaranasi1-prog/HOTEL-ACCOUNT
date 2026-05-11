@@ -10,27 +10,43 @@ import {
   Hotel as HotelIcon
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Summary } from '../types';
+import { Summary, Booking } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import { format, parseISO } from 'date-fns';
 import { HOTELS, getHotelByRoom } from '../constants';
+import { getBookings } from '../services/firebaseService';
 
 export default function Dashboard() {
   const [summary, setSummary] = useState<Summary | null>(null);
-  const [hotelBookings, setHotelBookings] = useState<any[]>([]);
+  const [hotelBookings, setHotelBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [summaryRes, hotelRes] = await Promise.all([
-        fetch('/api/reports/summary'),
-        fetch('/api/reports/summary/hotels')
-      ]);
-      const summaryData = await summaryRes.json();
-      const hotelData = await hotelRes.json();
+      const allBookings = await getBookings();
+      const today = new Date().toISOString().split('T')[0];
+      
+      const activeToday = allBookings.filter(b => 
+        b.booking_status === 'Active' && (
+          b.date === today || 
+          (b.check_in && b.check_out && b.check_in <= today && b.check_out >= today)
+        )
+      );
+
+      setHotelBookings(activeToday);
+
+      // Calculate summary from today's active bookings
+      const summaryData: Summary = {
+        total_revenue: activeToday.reduce((acc, curr) => acc + curr.total_amount, 0),
+        total_cash: activeToday.reduce((acc, curr) => acc + curr.cash_paid, 0),
+        total_online: activeToday.reduce((acc, curr) => acc + curr.online_paid, 0),
+        ota_count: activeToday.filter(b => b.booking_type === 'OTA').length,
+        walkin_count: activeToday.filter(b => b.booking_type === 'Walk-in').length,
+        pending_payments: activeToday.reduce((acc, curr) => acc + curr.balance_amount, 0)
+      };
+      
       setSummary(summaryData);
-      setHotelBookings(hotelData);
     } catch (err) {
       console.error(err);
     } finally {

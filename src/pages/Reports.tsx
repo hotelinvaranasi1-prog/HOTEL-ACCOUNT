@@ -19,6 +19,7 @@ import { HOTELS, getHotelByRoom } from '../constants';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { getBookings, getSettings } from '../services/firebaseService';
 
 export default function Reports() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -31,11 +32,10 @@ export default function Reports() {
   const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
-    const fetchBookings = async () => {
+    const fetchBookingsData = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch('/api/bookings');
-        const data = await res.json();
+        const data = await getBookings();
         setBookings(data);
       } catch (err) {
         console.error(err);
@@ -43,7 +43,7 @@ export default function Reports() {
         setIsLoading(false);
       }
     };
-    fetchBookings();
+    fetchBookingsData();
   }, []);
 
   const getFilteredBookings = () => {
@@ -185,8 +185,7 @@ export default function Reports() {
   const sendToTelegram = async (format: 'excel' | 'pdf') => {
     setIsSending(true);
     try {
-      const settingsRes = await fetch('/api/settings');
-      const settings = await settingsRes.json();
+      const settings = await getSettings();
 
       if (!settings.telegram_bot_token || !settings.telegram_chat_id || settings.telegram_enabled !== 'true') {
         alert("Telegram is not configured or enabled in Settings.");

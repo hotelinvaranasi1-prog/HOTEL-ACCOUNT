@@ -5,6 +5,7 @@ import { Invoice, InvoiceRoomRow, InvoiceSummaryData, InvoicePaymentData, Bookin
 import { formatCurrency, cn } from '../lib/utils';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { getSettings, createInvoice, updateInvoice } from '../services/firebaseService';
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -66,10 +67,9 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
 
   useEffect(() => {
     // Fetch hotel details from settings
-    const fetchSettings = async () => {
+    const fetchSettingsData = async () => {
       try {
-        const res = await fetch('/api/settings');
-        const settings = await res.json();
+        const settings = await getSettings();
         if (settings.hotel_name) {
           setHotelDetails({
             name: settings.hotel_name || 'HOTEL IN VARANASI',
@@ -83,7 +83,7 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
         console.error(err);
       }
     };
-    fetchSettings();
+    fetchSettingsData();
   }, []);
 
   useEffect(() => {
@@ -116,11 +116,11 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
           }
         ],
         payment_data: {
-          cash: booking.cash_paid,
-          upi: booking.online_paid,
+          cash: booking.cash_paid || 0,
+          upi: booking.online_paid || 0,
           card: 0,
-          totalPaid: booking.cash_paid + booking.online_paid,
-          dueAmount: booking.balance_amount
+          totalPaid: (booking.cash_paid || 0) + (booking.online_paid || 0),
+          dueAmount: booking.balance_amount || 0
         }
       });
     }
@@ -177,19 +177,13 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
     setIsLoading(true);
     try {
       const isUpdate = !!invoice?.id;
-      const url = isUpdate ? `/api/invoices/${invoice.id}` : '/api/invoices';
-      const method = isUpdate ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      
-      if (res.ok) {
-        onSave();
-        onClose();
+      if (isUpdate) {
+        await updateInvoice(String(invoice.id), formData);
+      } else {
+        await createInvoice(formData);
       }
+      onSave();
+      onClose();
     } catch (err) {
       console.error(err);
     } finally {

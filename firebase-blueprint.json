@@ -1,0 +1,94 @@
+{
+  "entities": {
+    "Room": {
+      "title": "Room",
+      "description": "Represents a hotel room and its current status.",
+      "type": "object",
+      "properties": {
+        "number": { "type": "string" },
+        "status": { "type": "string", "enum": ["Available", "Occupied", "Cleaning", "Maintenance"] }
+      },
+      "required": ["number", "status"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Represents a room booking.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "check_in": { "type": "string" },
+        "check_out": { "type": "string" },
+        "room_number": { "type": "string" },
+        "guest_name": { "type": "string" },
+        "booking_type": { "type": "string", "enum": ["Walk-in", "OTA"] },
+        "ota_source": { "type": "string" },
+        "room_price": { "type": "number" },
+        "misc_charges": { "type": "number" },
+        "total_amount": { "type": "number" },
+        "cash_paid": { "type": "number" },
+        "online_paid": { "type": "number" },
+        "balance_amount": { "type": "number" },
+        "commission_amount": { "type": "number" },
+        "gst_amount": { "type": "number" },
+        "net_income": { "type": "number" },
+        "payment_status": { "type": "string", "enum": ["Paid", "Unpaid"] },
+        "booking_status": { "type": "string", "enum": ["Active", "Cancelled", "Completed"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["date", "room_number", "booking_type", "total_amount", "booking_status", "created_at"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Represents a generated invoice.",
+      "type": "object",
+      "properties": {
+        "booking_id": { "type": "string" },
+        "invoice_number": { "type": "string" },
+        "invoice_date": { "type": "string" },
+        "guest_name": { "type": "string" },
+        "guest_address": { "type": "string" },
+        "guest_phone": { "type": "string" },
+        "guest_email": { "type": "string" },
+        "check_in": { "type": "string" },
+        "check_out": { "type": "string" },
+        "adults": { "type": "number" },
+        "children": { "type": "number" },
+        "booking_source": { "type": "string" },
+        "room_data": { "type": "array" },
+        "summary_data": { "type": "object" },
+        "payment_data": { "type": "object" },
+        "comments": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["invoice_number", "invoice_date", "guest_name", "created_at"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Represents an application setting.",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "value": { "type": "string" }
+      },
+      "required": ["key", "value"]
+    }
+  },
+  "firestore": {
+    "rooms": {
+      "schema": { "$ref": "#/entities/Room" },
+      "description": "Collection of all rooms."
+    },
+    "bookings": {
+      "schema": { "$ref": "#/entities/Booking" },
+      "description": "Collection of all bookings."
+    },
+    "invoices": {
+      "schema": { "$ref": "#/entities/Invoice" },
+      "description": "Collection of all invoices."
+    },
+    "settings": {
+      "schema": { "$ref": "#/entities/Setting" },
+      "description": "Collection of app configuration settings."
+    }
+  }
+}

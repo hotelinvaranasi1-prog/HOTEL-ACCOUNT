@@ -5,6 +5,7 @@ import { format, addDays, startOfToday, eachDayOfInterval, isSameDay, parseISO }
 import { Booking } from '../types';
 import { cn } from '../lib/utils';
 import { HOTELS, getHotelByRoom } from '../constants';
+import { getBookings } from '../services/firebaseService';
 
 export default function Schedule() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -12,11 +13,10 @@ export default function Schedule() {
   const [startDate, setStartDate] = useState(startOfToday());
   const [daysToShow] = useState(14);
 
-  const fetchBookings = async () => {
+  const fetchBookingsData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/bookings');
-      const data = await res.json();
+      const data = await getBookings();
       setBookings(data.filter((b: Booking) => b.booking_status !== 'Cancelled'));
     } catch (err) {
       console.error(err);
@@ -26,7 +26,7 @@ export default function Schedule() {
   };
 
   useEffect(() => {
-    fetchBookings();
+    fetchBookingsData();
   }, []);
 
   const days = eachDayOfInterval({

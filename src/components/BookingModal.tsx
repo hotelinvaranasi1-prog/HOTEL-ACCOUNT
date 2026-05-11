@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 import { format, differenceInDays, parseISO, addDays, isSameDay } from 'date-fns';
 import { DayPicker, DateRange } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
+import { createBooking, updateBooking, deleteBooking } from '../services/firebaseService';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -98,7 +99,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
     if (!booking) return;
     setIsLoading(true);
     try {
-      await fetch(`/api/bookings/${booking.id}`, { method: 'DELETE' });
+      await deleteBooking(String(booking.id));
       setShowDeleteConfirm(false);
       onClose();
     } catch (err) {
@@ -111,19 +112,11 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
   const handleActualSubmit = async () => {
     setIsLoading(true);
     try {
-      const url = booking ? `/api/bookings/${booking.id}` : '/api/bookings';
-      const method = booking ? 'PUT' : 'POST';
-      
-      const payload = {
-        ...formData,
-        payment_status: balanceAmount <= 0 ? 'Paid' : 'Unpaid'
-      };
-
-      await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      if (booking) {
+        await updateBooking(String(booking.id), formData);
+      } else {
+        await createBooking(formData);
+      }
       setShowConfirm(false);
       onClose();
     } catch (err) {
@@ -145,6 +138,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
       {isOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto">
           <motion.div
+            key="booking-modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -152,6 +146,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
             onClick={onClose}
           />
           <motion.div
+            key="booking-modal-content"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}

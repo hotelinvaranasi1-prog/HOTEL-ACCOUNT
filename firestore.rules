@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isStaff() {
+      return isSignedIn() && (
+        request.auth.token.email == 'hotelinvaranasi1@gmail.com' ||
+        request.auth.token.email_verified == true
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Rooms
+    match /rooms/{roomNumber} {
+      function isValidRoom(data) {
+        return data.number is string && data.number.size() <= 10 &&
+               data.status in ['Available', 'Occupied', 'Cleaning', 'Maintenance'];
+      }
+
+      allow read: if isStaff(); 
+      allow write: if isStaff() && isValidRoom(incoming());
+    }
+
+    // Bookings
+    match /bookings/{bookingId} {
+      function isValidBooking(data) {
+        return data.date is string &&
+               data.room_number is string &&
+               data.booking_type in ['Walk-in', 'OTA'] &&
+               data.booking_status in ['Active', 'Cancelled', 'Completed'];
+      }
+
+      allow read: if isStaff();
+      allow create: if isStaff() && isValidBooking(incoming());
+      allow update: if isStaff() && isValidBooking(incoming());
+      allow delete: if isStaff();
+    }
+
+    // Invoices
+    match /invoices/{invoiceId} {
+      allow read: if isStaff();
+      allow create: if isStaff();
+      allow update: if isStaff();
+      allow delete: if isStaff();
+    }
+
+    // Settings
+    match /settings/{settingKey} {
+      allow read: if isStaff();
+      allow write: if isStaff();
+    }
+  }
+}

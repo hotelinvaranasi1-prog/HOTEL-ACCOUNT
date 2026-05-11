@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Send, Bell, Shield, Save, Loader2, CheckCircle2, Hotel, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
+import { getSettings, saveSettings } from '../services/firebaseService';
 
 export default function Settings() {
   const [settings, setSettings] = useState({
@@ -19,10 +20,9 @@ export default function Settings() {
   const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
-    const fetchSettings = async () => {
+    const fetchSettingsData = async () => {
       try {
-        const res = await fetch('/api/settings');
-        const data = await res.json();
+        const data = await getSettings();
         setSettings(prev => ({ ...prev, ...data }));
       } catch (err) {
         console.error(err);
@@ -30,17 +30,13 @@ export default function Settings() {
         setIsLoading(false);
       }
     };
-    fetchSettings();
+    fetchSettingsData();
   }, []);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
-      });
+      await saveSettings(settings);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err) {

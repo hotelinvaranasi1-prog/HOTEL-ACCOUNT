@@ -23,6 +23,7 @@ import { format, parseISO, differenceInDays } from 'date-fns';
 import { HOTELS, getHotelByRoom } from '../constants';
 import BookingModal from '../components/BookingModal';
 import InvoiceModal from '../components/InvoiceModal';
+import { getBookings, updateBooking, updateRoomStatus } from '../services/firebaseService';
 
 export default function BookingList() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -41,11 +42,10 @@ export default function BookingList() {
   const [miscAmount, setMiscAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const fetchBookings = async () => {
+  const fetchBookingsData = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/bookings');
-      const data = await res.json();
+      const data = await getBookings();
       setBookings(data);
     } catch (err) {
       console.error(err);
@@ -55,13 +55,13 @@ export default function BookingList() {
   };
 
   useEffect(() => {
-    fetchBookings();
+    fetchBookingsData();
   }, []);
 
   const filteredBookings = bookings.filter(b => {
     const matchesSearch = 
-      b.room_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      b.guest_name.toLowerCase().includes(searchTerm.toLowerCase());
+      (b.room_number?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+      (b.guest_name?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
     const matchesType = filterType === 'All' || b.booking_type === filterType;
     const matchesPayment = filterPayment === 'All' || b.payment_status === filterPayment;
     const matchesStatus = filterStatus === 'All' || b.booking_status === filterStatus;
@@ -69,32 +69,49 @@ export default function BookingList() {
     return matchesSearch && matchesType && matchesPayment && matchesStatus;
   });
 
-  const handleQuickPay = async (id: number, method: 'cash' | 'online', amount: number) => {
+  const handleQuickPay = async (b: Booking, method: 'cash' | 'online', amount: number) => {
     try {
-      await fetch(`/api/bookings/${id}/pay`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method, amount }),
+      const currentCash = method === 'cash' ? (b.cash_paid || 0) + amount : (b.cash_paid || 0);
+      const currentOnline = method === 'online' ? (b.online_paid || 0) + amount : (b.online_paid || 0);
+      
+      await updateBooking(String(b.id), {
+        ...b,
+        cash_paid: currentCash,
+        online_paid: currentOnline
       });
       setQuickPayBooking(null);
-      fetchBookings();
+      fetchBookingsData();
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleCancel = async (id: number) => {
-    if (confirm('Are you sure you want to cancel this booking? This will also make the room available.')) {
+  const handleCancel = async (b: Booking) => {
+    if (confirm(`Are you sure you want to cancel booking for Room ${b.room_number}? This will also make the room available.`)) {
       try {
-        const res = await fetch(`/api/bookings/${id}/cancel`, { method: 'POST' });
-        if (res.ok) {
-          fetchBookings();
-        } else {
-          alert('Failed to cancel booking');
-        }
+        await updateBooking(String(b.id), {
+          ...b,
+          booking_status: 'Cancelled'
+        });
+        await updateRoomStatus(b.room_number, 'Available');
+        fetchBookingsData();
       } catch (err) {
         console.error(err);
         alert('Error cancelling booking');
+      }
+    }
+  };
+
+  const handleCheckoutAndInvoice = async (b: Booking) => {
+    if (confirm(`Check out guest ${b.guest_name} and generate invoice?`)) {
+      try {
+        await updateBooking(String(b.id), { ...b, booking_status: 'Completed' });
+        await updateRoomStatus(b.room_number, 'Available');
+        setInvoiceBooking({ ...b, booking_status: 'Completed' });
+        setIsInvoiceModalOpen(true);
+        fetchBookingsData();
+      } catch (err) {
+        console.error(err);
       }
     }
   };
@@ -104,19 +121,15 @@ export default function BookingList() {
     
     setIsProcessing(true);
     try {
-      const res = await fetch(`/api/bookings/${miscChargeBooking.id}/misc`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: Number(miscAmount) }),
+      const currentMisc = Number(miscChargeBooking.misc_charges) || 0;
+      await updateBooking(String(miscChargeBooking.id), {
+        ...miscChargeBooking,
+        misc_charges: currentMisc + Number(miscAmount)
       });
       
-      if (res.ok) {
-        setMiscChargeBooking(null);
-        setMiscAmount('');
-        fetchBookings();
-      } else {
-        alert('Failed to add miscellaneous charge');
-      }
+      setMiscChargeBooking(null);
+      setMiscAmount('');
+      fetchBookingsData();
     } catch (err) {
       console.error(err);
       alert('Error adding miscellaneous charge');
@@ -301,18 +314,7 @@ export default function BookingList() {
                       )}
                       {b.booking_status === 'Active' && (
                         <button 
-                          onClick={async () => {
-                            if (confirm(`Check out guest ${b.guest_name} and generate invoice?`)) {
-                              await fetch(`/api/bookings/${b.id}`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ ...b, booking_status: 'Completed' })
-                              });
-                              setInvoiceBooking({ ...b, booking_status: 'Completed' });
-                              setIsInvoiceModalOpen(true);
-                              fetchBookings();
-                            }
-                          }}
+                          onClick={() => handleCheckoutAndInvoice(b)}
                           className="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors"
                           title="Checkout & Invoice"
                         >
@@ -333,7 +335,7 @@ export default function BookingList() {
                       )}
                       {b.booking_status === 'Active' && (
                         <button 
-                          onClick={() => handleCancel(b.id)}
+                          onClick={() => handleCancel(b)}
                           className="p-2 hover:bg-rose-50 text-rose-600 rounded-lg transition-colors"
                           title="Cancel"
                         >
@@ -354,7 +356,7 @@ export default function BookingList() {
         onClose={() => {
           setIsModalOpen(false);
           setEditingBooking(null);
-          fetchBookings();
+          fetchBookingsData();
         }}
         roomNumber={editingBooking?.room_number || ''}
         booking={editingBooking}
@@ -367,7 +369,7 @@ export default function BookingList() {
           setInvoiceBooking(null);
         }}
         booking={invoiceBooking || undefined}
-        onSave={fetchBookings}
+        onSave={fetchBookingsData}
       />
 
       {/* Quick Pay Modal */}
@@ -397,7 +399,7 @@ export default function BookingList() {
 
               <div className="space-y-3">
                 <button
-                  onClick={() => handleQuickPay(quickPayBooking.id, 'cash', quickPayBooking.balance_amount)}
+                  onClick={() => handleQuickPay(quickPayBooking, 'cash', quickPayBooking.balance_amount)}
                   className="w-full flex items-center justify-between p-4 bg-emerald-50 border-2 border-emerald-100 rounded-2xl group hover:border-emerald-500 transition-all"
                 >
                   <div className="flex items-center gap-3">
@@ -410,7 +412,7 @@ export default function BookingList() {
                 </button>
 
                 <button
-                  onClick={() => handleQuickPay(quickPayBooking.id, 'online', quickPayBooking.balance_amount)}
+                  onClick={() => handleQuickPay(quickPayBooking, 'online', quickPayBooking.balance_amount)}
                   className="w-full flex items-center justify-between p-4 bg-blue-50 border-2 border-blue-100 rounded-2xl group hover:border-blue-500 transition-all"
                 >
                   <div className="flex items-center gap-3">
