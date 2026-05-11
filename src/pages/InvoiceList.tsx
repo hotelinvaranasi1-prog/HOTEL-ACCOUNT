@@ -206,13 +206,13 @@ export default function InvoiceList() {
         </div>
       ) : filtered.length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
-          {filtered.map((invoice) => {
+          {filtered.map((invoice, idx) => {
              const paymentData = typeof invoice.payment_data === 'string' ? JSON.parse(invoice.payment_data) : invoice.payment_data;
              const isPaid = paymentData.dueAmount <= 0;
 
              return (
               <motion.div
-                key={`invoice-card-${invoice.id}-${invoice.invoice_number}`}
+                key={`invoice-card-${invoice.id || 'new'}-${invoice.invoice_number || 'draft'}`}
                 layout
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

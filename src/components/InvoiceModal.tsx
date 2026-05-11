@@ -206,221 +206,127 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
   };
 
     const createInvoicePDF = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.width;
-    const pageHeight = doc.internal.pageSize.height;
     const margin = 15;
     const contentWidth = pageWidth - (margin * 2);
 
-    // Modern Luxury Theme Colors (Matching the Image)
+    // Color Palette
     const colors = {
-      primary: [30, 64, 96] as [number, number, number], // Navy Blue
-      accent: [184, 134, 11] as [number, number, number], // Dark Goldenrod
-      secondary: [100, 116, 139] as [number, number, number], // Slate 500
-      box: [248, 250, 252] as [number, number, number], // Very light gray/slate
-      tableHead: [226, 232, 240] as [number, number, number], // Table header background
-      border: [203, 213, 225] as [number, number, number], // Slate 300
+      primary: [15, 23, 42] as [number, number, number], // Slate 900
+      indigo: [79, 70, 229] as [number, number, number], // Indigo 600
+      text: [71, 85, 105] as [number, number, number], // Slate 600
+      light: [241, 245, 249] as [number, number, number], // Slate 100
       white: [255, 255, 255] as [number, number, number],
     };
 
-    // Background Color (Subtle marble/cream texture effect)
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-
-    // 1. Header with Golden Logo (Simulated)
-    const centerX = pageWidth / 2;
-    
-    // Header Label
-    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('TAX INVOICE', centerX, 10, { align: 'center' });
-
-    doc.setDrawColor(colors.accent[0], colors.accent[1], colors.accent[2]);
-    doc.setLineWidth(0.5);
-    
-    // Draw simple golden crown/temple icon
-    doc.line(centerX - 10, 25, centerX, 15);
-    doc.line(centerX + 10, 25, centerX, 15);
-    doc.line(centerX - 5, 20, centerX + 5, 20);
-    doc.setLineWidth(1);
-    doc.line(centerX - 12, 30, centerX + 12, 30);
-
-    // 2. Invoice Details Box (Top Right)
-    const boxWidth = 55;
-    const boxX = pageWidth - margin - boxWidth;
-    doc.setFillColor(colors.box[0], colors.box[1], colors.box[2]);
-    doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
-    doc.roundedRect(boxX, 10, boxWidth, 18, 2, 2, 'FD');
-    
-    doc.setTextColor(51, 65, 85);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`INVOICE: #${formData.invoice_number || '33787747'}`, boxX + 4, 17);
-    doc.text(`DATE: ${formData.invoice_date.split('-').reverse().join('-')}`, boxX + 4, 24);
-
-    // 3. Hotel Branding
-    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.text(hotelDetails?.name?.toUpperCase() || 'HOTEL IN VARANASI', margin, 40);
-    
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-    doc.text(`${hotelDetails?.address} | Phone: ${hotelDetails?.phone} | Email: ${hotelDetails?.email}`, margin, 46);
-    doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-    doc.line(margin, 48, pageWidth - margin, 48);
-
-    let currentY = 58;
-
-    // 4. Sections Layout
-    const drawSectionHeader = (label: string, iconType: string, y: number) => {
-      doc.setFillColor(colors.box[0], colors.box[1], colors.box[2]);
-      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]);
-      doc.roundedRect(margin, y, contentWidth, 8, 0, 0, 'FD'); // Zero radius for sharp boxes
-      doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text(label.toUpperCase(), margin + 8, y + 6);
+    // Helper for currency in PDF to avoid font issues with ₹
+    const formatPDFCurrency = (amount: number) => {
+        return `INR ${amount.toFixed(2)}`;
     };
 
-    // GUEST INFORMATION
-    drawSectionHeader('Guest Information', 'user', currentY);
-    currentY += 14;
-    doc.setFontSize(9);
-    doc.setTextColor(0, 0, 0);
+    // 1. Header
+    doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
+    
+    doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Name:`, margin + 5, currentY);
+    doc.text(hotelDetails?.name?.toUpperCase() || 'HOTEL IN VARANASI', margin, 20);
+    
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(formData.guest_name || 'G Karunakar', margin + 35, currentY);
+    doc.text(hotelDetails?.address || '', margin, 28);
+    doc.text(`${hotelDetails?.phone} | ${hotelDetails?.email}`, margin, 33);
+
+    // Invoice Meta
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TAX INVOICE', pageWidth - margin, 15, { align: 'right' });
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`#${formData.invoice_number || '---'}`, pageWidth - margin, 22, { align: 'right' });
+    doc.text(`Date: ${formData.invoice_date || ''}`, pageWidth - margin, 27, { align: 'right' });
+
+    let currentY = 50;
+
+    // 2. Billing Info
+    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('BILLED TO:', margin, currentY);
+    doc.text('BOOKING DETAILS:', pageWidth / 2 + margin, currentY);
     
     currentY += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Mobile:`, margin + 5, currentY);
+    doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
     doc.setFont('helvetica', 'normal');
-    doc.text(formData.guest_phone || '9849968579', margin + 35, currentY);
+    doc.text(formData.guest_name || 'Guest', margin, currentY);
+    doc.text(`Source: ${formData.booking_source || '---'}`, pageWidth / 2 + margin, currentY);
+    
+    currentY += 5;
+    doc.text(formData.guest_phone || '', margin, currentY);
+    doc.text(`${formData.check_in || '---'} to ${formData.check_out || '---'}`, pageWidth / 2 + margin, currentY);
 
-    currentY += 6;
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Booking Source:`, margin + 5, currentY);
-    doc.setFont('helvetica', 'normal');
-    doc.text(formData.booking_source || 'Walk In', margin + 35, currentY);
-
-    // STAY DETAILS
     currentY += 10;
-    drawSectionHeader('Stay Details', 'stay', currentY);
-    currentY += 14;
 
+    // 3. Room & Charges Table
     autoTable(doc, {
-      startY: currentY - 6,
-      body: [
-        ['Check-In:', formData.check_in || '', 'Check-Out:', formData.check_out || ''],
-        ['No Of Nights:', (formData.room_data[0]?.nights || 1).toString(), 'No Of Adults:', (formData.adults || 2).toString()]
-      ],
-      theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2, lineColor: colors.border, lineWidth: 0.1 },
+      startY: currentY,
+      tableWidth: contentWidth,
+      margin: { left: margin, right: margin },
+      head: [['Description', 'Date', 'Price', 'Nights', 'Amount']],
+      body: formData.room_data.map((r: any) => [
+        r.type, 
+        r.date, 
+        formatPDFCurrency(r.price), 
+        r.nights.toString(), 
+        formatPDFCurrency(r.amount)
+      ]),
+      headStyles: { fillColor: colors.primary, textColor: colors.white, fontSize: 9 },
+      styles: { fontSize: 9, cellPadding: 2, overflow: 'linebreak', halign: 'left' },
       columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 35, fillColor: [248, 250, 252] },
-        1: { cellWidth: 55 },
-        2: { fontStyle: 'bold', cellWidth: 35, fillColor: [248, 250, 252] },
-        3: { cellWidth: 55 },
+          0: { cellWidth: 50 },
+          1: { cellWidth: 30 },
+          2: { cellWidth: 30, halign: 'right' },
+          3: { cellWidth: 20, halign: 'center' },
+          4: { cellWidth: 30, halign: 'right' }
       }
     });
 
     currentY = (doc as any).lastAutoTable.finalY + 10;
 
-    // ROOM RATE DETAILS
-    drawSectionHeader('Room Rate Details', 'rate', currentY);
-    currentY += 10;
-
-    // Mocking daily columns based on dates
-    const room = formData.room_data[0] || {};
-    const firstDate = room.date ? new Date(room.date) : new Date();
-    
-    // Generate 3 date labels for the boxy display
-    const getLabel = (d: Date, offset: number) => {
-      const target = new Date(d);
-      target.setDate(target.getDate() + offset);
-      return target.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' });
-    };
-
-    const dailyCols = [
-      getLabel(firstDate, 0),
-      getLabel(firstDate, 1),
-      getLabel(firstDate, 2)
-    ];
-    
+    // 4. Financial Summary
     autoTable(doc, {
       startY: currentY,
-      head: [['Description', ...dailyCols, 'Total']],
+      tableWidth: 80,
+      margin: { left: pageWidth - margin - 80 },
       body: [
-        [`${room.type || 'Bedroom Deluxe'} (${formData.guest_name})`, `₹${room.price}`, `₹${room.price}`, `₹${room.price}`, `₹${room.amount}`],
-        ['RatePlan: Standard', '', '', '', '']
+        ['Subtotal', formatPDFCurrency(formData.summary_data.subtotal)],
+        [`GST (${formData.summary_data.gstPercent}%)`, formatPDFCurrency(formData.summary_data.gstAmount)],
+        ['Extra Charges', formatPDFCurrency(formData.summary_data.extraCharges)],
+        ['Discount', formatPDFCurrency(formData.summary_data.discount)],
+        ['NET TOTAL', formatPDFCurrency(formData.summary_data.netTotal)],
+        ['Total Paid', formatPDFCurrency(formData.payment_data.totalPaid)],
+        ['BALANCE DUE', formatPDFCurrency(formData.payment_data.dueAmount)]
       ],
-      theme: 'grid',
-      headStyles: { fillColor: colors.tableHead, textColor: [0, 0, 0], fontStyle: 'bold', lineColor: colors.border, lineWidth: 0.1 },
-      styles: { fontSize: 8, lineColor: colors.border, lineWidth: 0.1 },
-    });
-
-    currentY = (doc as any).lastAutoTable.finalY;
-
-    // Financial Summary Table Bottom right
-    const summaryRows = [
-      ['Total:', formatCurrency(formData.summary_data.subtotal)],
-      ['GST (5.00%):', formatCurrency(formData.summary_data.gstAmount)],
-      ['Tax Total:', formatCurrency(formData.summary_data.gstAmount)],
-      ['NET Total:', formatCurrency(formData.summary_data.netTotal)],
-      ['Payment Received (UPI):', formatCurrency(formData.payment_data.upi + formData.payment_data.cash)],
-      ['AMOUNT OWING:', formatCurrency(formData.payment_data.dueAmount)]
-    ];
-
-    autoTable(doc, {
-      startY: currentY,
-      margin: { left: pageWidth - margin - 70 },
-      body: summaryRows,
-      theme: 'grid',
-      styles: { 
-        fontSize: 8, 
-        halign: 'right',
-        cellPadding: 1.5,
-        lineColor: colors.border,
-        lineWidth: 0.1
-      },
-      columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 42, fillColor: [248, 250, 252] },
-        1: { cellWidth: 28 }
-      },
-      didParseCell: function(data) {
-        if (data.row.index === 3 || data.row.index === 5) { // NET Total and Amount Owing
-           data.cell.styles.fillColor = [241, 245, 249];
-           data.cell.styles.fontStyle = 'bold';
-        }
-        if (data.row.index === 5) {
-          data.cell.styles.textColor = [153, 27, 27]; // Reddish
+      theme: 'plain',
+      styles: { fontSize: 9, cellPadding: 1, halign: 'right' },
+      columnStyles: { 0: { fontStyle: 'bold', halign: 'left' }, 1: { fontStyle: 'bold', halign: 'right' } },
+      didParseCell: (data) => {
+        if (data.row.index === 4 || data.row.index === 6) { 
+          data.cell.styles.fillColor = colors.light;
         }
       }
     });
 
-    currentY = (doc as any).lastAutoTable.finalY + 15;
-
-    // Footer
-    doc.setTextColor(51, 65, 85);
+    // 5. Terms
+    currentY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Terms & Conditions:', margin, currentY);
-    
+    doc.text('TERMS & CONDITIONS:', margin, currentY);
     currentY += 4;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    const terms = doc.splitTextToSize(formData.comments, contentWidth);
-    doc.text(terms, margin, currentY);
-
-    currentY += terms.length * 3 + 10;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text('Best Regards,', pageWidth - margin - 40, currentY);
-    doc.text(hotelDetails?.name?.toUpperCase() || 'HOTEL IN VARANASI', pageWidth - margin - 50, currentY + 5);
+    const splitTerms = doc.splitTextToSize(formData.comments || DEFAULT_TERMS, contentWidth);
+    doc.text(splitTerms, margin, currentY);
 
     return doc;
   };
@@ -438,24 +344,37 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
 
     setIsSendingEmail(true);
     try {
-      // Configuration
-      const SERVICE_ID = 'service_hsdjbbh';
-      const TEMPLATE_ID = 'template_o05xf7q';
-      const PUBLIC_KEY = 'uhEdPWW2ZOaHD9Km6';
+      const doc = createInvoicePDF();
+      const pdfBase64 = doc.output('datauristring');
 
       const templateParams = {
-        guest_name: formData.guest_name,
-        hotel_name: hotelDetails?.name,
-        guest_email: formData.guest_email,
-        total_amount: formData.summary_data.netTotal,
-        invoice_number: formData.invoice_number,
+        email: formData.guest_email,
+        customer_name: formData.guest_name || 'Guest',
+        invoice_id: formData.invoice_number || 'Draft',
+        invoice_date: formData.invoice_date || '',
+        booking_source: formData.booking_source || '',
+        checkin_date: formData.check_in || '',
+        checkout_date: formData.check_out || '',
+        room_number: formData.room_data.map((r: any) => r.type).join(', ') || '',
+        room_price: formData.summary_data.subtotal.toFixed(2),
+        gst: formData.summary_data.gstAmount.toFixed(2),
+        extra_charges: formData.summary_data.extraCharges.toFixed(2),
+        discount: formData.summary_data.discount.toFixed(2),
+        net_total: formData.summary_data.netTotal.toFixed(2),
+        balance_due: formData.payment_data.dueAmount.toFixed(2),
+        invoice_link: pdfBase64,
       };
 
-      await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);
+      await emailjs.send(
+        import.meta.env.VITE_EMAILJS_SERVICE_ID,
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+        templateParams,
+        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+      );
       alert("Email Sent Successfully");
     } catch (err: any) {
-      console.error(err);
-      alert("Email Failed");
+      console.error("EmailJS Error:", err);
+      alert("Email Failed: " + (err.text || err.message || "An unknown error occurred"));
     } finally {
       setIsSendingEmail(false);
     }
@@ -615,7 +534,7 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
                   </thead>
                   <tbody className="space-y-2">
                     {formData.room_data.map((room: any, index: number) => (
-                      <tr key={`invoice-room-row-${index}`} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                      <tr key={`invoice-room-row-${index}-${room.type}-${room.date}`} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                         <td className="px-4 py-2">
                           <select
                             value={room.type || 'Bedroom Deluxe'}

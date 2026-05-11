@@ -146,7 +146,7 @@ export default function Schedule() {
                           const isStart = booking.check_in ? isSameDay(day, parseISO(booking.check_in)) : isSameDay(day, parseISO(booking.date));
                           return (
                             <div 
-                              key={`cell-booking-${booking.id}-${format(day, 'yyyy-MM-dd')}`}
+                              key={`cell-booking-${booking.id || 'new'}-${format(day, 'yyyy-MM-dd')}-${bIdx}`}
                               className={cn(
                                 "flex-1 rounded-md text-[9px] font-bold p-1 overflow-hidden transition-all shadow-sm flex flex-col justify-center text-white",
                                 getBookingClass(dayBookings),
