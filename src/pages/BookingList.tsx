@@ -231,7 +231,7 @@ export default function BookingList() {
                 </tr>
               ) : filteredBookings.map((b, idx) => (
                 <tr 
-                  key={`booking-list-row-${b.id}-${b.date}-${idx}`} 
+                  key={b.id} 
                   className={cn(
                     "hover:bg-slate-50/50 transition-colors",
                     b.booking_status === 'Cancelled' && "opacity-60 bg-slate-50/30 grayscale"

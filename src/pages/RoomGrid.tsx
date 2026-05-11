@@ -95,8 +95,8 @@ export default function RoomGrid() {
     const today = new Date().toISOString().split('T')[0];
     const todayBookings = bookings.filter(b => b.date === today);
     return todayBookings.reduce((acc, b) => ({
-      today_collection_cash: acc.today_collection_cash + b.advance_paid,
-      today_collection_online: acc.today_collection_online + (b.total_amount - b.advance_paid),
+      today_collection_cash: acc.today_collection_cash + (b.cash_paid || 0),
+      today_collection_online: acc.today_collection_online + (b.online_paid || 0),
       total_commission: acc.total_commission + b.commission_amount,
       total_pending: acc.total_pending + b.balance_amount,
     }), { today_collection_cash: 0, today_collection_online: 0, total_commission: 0, total_pending: 0 } as DailySummary);
@@ -254,7 +254,7 @@ export default function RoomGrid() {
                               <span className="text-slate-500">Total:</span>
                               <span className="font-bold text-right text-slate-800">₹{booking.total_amount}</span>
                               <span className="text-slate-500">Paid:</span>
-                              <span className="font-bold text-right text-green-700">₹{booking.advance_paid}</span>
+                              <span className="font-bold text-right text-green-700">₹{(booking.cash_paid || 0) + (booking.online_paid || 0)}</span>
                               <span className="text-slate-500">Due:</span>
                               <span className={cn("font-bold text-right", booking.balance_amount > 0 ? "text-red-600" : "text-slate-800")}>
                                 ₹{booking.balance_amount}
