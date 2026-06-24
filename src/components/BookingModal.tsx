@@ -262,48 +262,50 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
     <>
       <AnimatePresence>
         {isOpen && (
-          <div key="booking-modal-root" className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto">
+          <div key="booking-modal-wrapper" className="relative z-[60]">
             <motion.div
-            key="booking-modal-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
-            onClick={onClose}
-          />
-          <motion.div
-            key="booking-modal-content"
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-2xl bg-white rounded-[2.5rem] shadow-2xl my-8"
-          >
-            <form onSubmit={handleSubmit} className="p-8 md:p-10">
-              <div className="flex items-center justify-between mb-8">
+              key="booking-modal-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <div className="fixed inset-0 overflow-y-auto" onClick={onClose}>
+              <div className="flex min-h-full items-center justify-center p-2 sm:p-4 text-center">
+                <motion.div
+                  key="booking-modal-content"
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                  onClick={e => e.stopPropagation()}
+                  className="relative w-full max-w-3xl bg-white rounded-3xl sm:rounded-[2.5rem] shadow-2xl my-4 sm:my-8 text-left"
+                >
+                <form onSubmit={handleSubmit} className="p-5 sm:p-8 md:p-10">
+              <div className="flex items-center justify-between mb-4 sm:mb-8">
                 <div>
-                  <h2 className="text-3xl font-black text-slate-900">
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
                     {booking ? 'Edit Booking' : 'New Booking'}
                   </h2>
-                  <p className="text-slate-500 font-medium">Room {formData.room_number}</p>
+                  <p className="text-sm sm:text-base text-slate-500 font-medium">Room {formData.room_number}</p>
                 </div>
                 <button 
                   type="button"
                   onClick={onClose}
-                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                  className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-full transition-colors"
                 >
-                  <X className="w-6 h-6 text-slate-400" />
+                  <X className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400" />
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8">
                 {/* Left Column: Basic Info */}
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="relative">
                     <label className="block text-sm font-bold text-slate-700 mb-2">Check-in & Check-out Dates</label>
                     <button
                       type="button"
                       onClick={() => setShowCalendar(!showCalendar)}
-                      className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl hover:border-indigo-300 transition-colors outline-none"
+                      className="w-full flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl hover:border-indigo-300 transition-colors outline-none"
                     >
                       <div className="flex items-center gap-3">
                         <CalendarIcon className="w-5 h-5 text-indigo-500" />
@@ -361,7 +363,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                       type="text"
                       value={formData.guest_name}
                       onChange={e => setFormData({ ...formData, guest_name: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none"
                       placeholder="John Doe"
                     />
                   </div>
@@ -372,7 +374,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                       type="tel"
                       value={formData.guest_phone}
                       onChange={e => setFormData({ ...formData, guest_phone: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none"
                       placeholder="+91 98765 43210"
                     />
                   </div>
@@ -398,7 +400,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                           type="button"
                           onClick={() => setFormData({ ...formData, booking_type: type as BookingType })}
                           className={cn(
-                            "flex-1 py-3 rounded-2xl font-bold border-2 transition-all text-sm",
+                            "flex-1 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl font-bold border-2 transition-all text-sm",
                             formData.booking_type === type 
                               ? "bg-indigo-50 border-indigo-600 text-indigo-600"
                               : "bg-slate-50 border-slate-100 text-slate-400"
@@ -416,7 +418,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                       <select
                         value={formData.ota_source}
                         onChange={e => setFormData({ ...formData, ota_source: e.target.value })}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-sm sm:text-base"
                       >
                         <option value="">Select Platform</option>
                         {otaSources.map((s, idx) => <option key={`ota-source-${s}-${idx}`} value={s}>{s}</option>)}
@@ -542,15 +544,15 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                 </div>
 
                 {/* Right Column: Financials */}
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <label className="block text-sm font-bold text-slate-700 mb-2">Room Price</label>
                       <input
                         type="number"
                         value={formData.room_price}
                         onChange={e => setFormData({ ...formData, room_price: Number(e.target.value) })}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
                         required
                       />
                     </div>
@@ -560,7 +562,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                         type="number"
                         value={formData.misc_charges}
                         onChange={e => setFormData({ ...formData, misc_charges: Number(e.target.value) })}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
                       />
                     </div>
                     <div>
@@ -569,12 +571,12 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                         type="number"
                         value={formData.discount}
                         onChange={e => setFormData({ ...formData, discount: Number(e.target.value) })}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
                       />
                     </div>
                   </div>
 
-                  <div className="bg-slate-900 p-6 rounded-3xl text-white shadow-inner">
+                  <div className="bg-slate-900 p-5 sm:p-6 rounded-2xl sm:rounded-3xl text-white shadow-inner">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-slate-400 font-bold text-xs uppercase tracking-widest">Total Amount</span>
                       <span className="text-2xl font-black">₹{totalAmount}</span>
@@ -634,11 +636,11 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                 </div>
               </div>
 
-              <div className="mt-10 flex flex-wrap gap-4">
+              <div className="mt-6 sm:mt-10 flex flex-wrap gap-3 sm:gap-4">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 min-w-[120px] px-6 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all"
+                  className="flex-1 min-w-[100px] px-4 sm:px-6 py-3 sm:py-4 bg-slate-100 text-slate-600 font-bold rounded-xl sm:rounded-2xl hover:bg-slate-200 transition-all text-sm sm:text-base"
                 >
                   Cancel
                 </button>
@@ -646,22 +648,24 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                   <button
                     type="button"
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="flex-1 min-w-[120px] px-6 py-4 bg-rose-50 text-rose-600 font-bold rounded-2xl hover:bg-rose-100 transition-all flex items-center justify-center gap-2"
+                    className="flex-1 min-w-[100px] px-4 sm:px-6 py-3 sm:py-4 bg-rose-50 text-rose-600 font-bold rounded-xl sm:rounded-2xl hover:bg-rose-100 transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                     Terminate
                   </button>
                 )}
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex-[2] min-w-[200px] px-6 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 disabled:opacity-70 flex items-center justify-center gap-2"
+                  className="flex-[2] min-w-[150px] px-4 sm:px-6 py-3 sm:py-4 bg-indigo-600 text-white font-bold rounded-xl sm:rounded-2xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 disabled:opacity-70 flex items-center justify-center gap-2 text-sm sm:text-base"
                 >
-                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> Save Booking</>}
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-4 h-4 sm:w-5 sm:h-5" /> Save Booking</>}
                 </button>
               </div>
             </form>
           </motion.div>
+          </div>
+          </div>
         </div>
       )}
       </AnimatePresence>
