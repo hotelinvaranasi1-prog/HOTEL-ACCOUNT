@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Save, Calculator, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { X, Loader2, Save, Calculator, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Booking, BookingType, PaymentStatus, BookingStatus, PaymentMode } from '../types';
 import { cn } from '../lib/utils';
@@ -24,6 +24,28 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
     room_number: roomNumber,
     guest_name: booking?.guest_name || '',
     guest_phone: booking?.guest_phone || '',
+    
+    // New optional fields
+    guest_alt_phone: booking?.guest_alt_phone || '',
+    guest_email: booking?.guest_email || '',
+    guest_address: booking?.guest_address || '',
+    guest_city: booking?.guest_city || '',
+    guest_state: booking?.guest_state || '',
+    guest_country: booking?.guest_country || '',
+    guest_pincode: booking?.guest_pincode || '',
+    guest_nationality: booking?.guest_nationality || '',
+    guest_id_type: booking?.guest_id_type || '',
+    guest_id_number: booking?.guest_id_number || '',
+    company_name: booking?.company_name || '',
+    company_gst: booking?.company_gst || '',
+    adults: booking?.adults || 1,
+    children: booking?.children || 0,
+    pets: booking?.pets || 0,
+    purpose_of_visit: booking?.purpose_of_visit || '',
+    vehicle_number: booking?.vehicle_number || '',
+    special_requests: booking?.special_requests || '',
+    notes: booking?.notes || '',
+
     booking_type: booking?.booking_type || 'Walk-in',
     ota_source: booking?.ota_source || '',
     room_price: booking?.room_price || 0,
@@ -52,6 +74,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     if (booking) {
@@ -64,6 +87,27 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
         room_number: booking.room_number || '',
         guest_name: booking.guest_name || '',
         guest_phone: booking.guest_phone || '',
+        
+        guest_alt_phone: booking.guest_alt_phone || '',
+        guest_email: booking.guest_email || '',
+        guest_address: booking.guest_address || '',
+        guest_city: booking.guest_city || '',
+        guest_state: booking.guest_state || '',
+        guest_country: booking.guest_country || '',
+        guest_pincode: booking.guest_pincode || '',
+        guest_nationality: booking.guest_nationality || '',
+        guest_id_type: booking.guest_id_type || '',
+        guest_id_number: booking.guest_id_number || '',
+        company_name: booking.company_name || '',
+        company_gst: booking.company_gst || '',
+        adults: booking.adults || 1,
+        children: booking.children || 0,
+        pets: booking.pets || 0,
+        purpose_of_visit: booking.purpose_of_visit || '',
+        vehicle_number: booking.vehicle_number || '',
+        special_requests: booking.special_requests || '',
+        notes: booking.notes || '',
+
         booking_type: booking.booking_type || 'Walk-in',
         ota_source: booking.ota_source || '',
         room_price: booking.room_price || 0,
@@ -94,6 +138,25 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
         room_number: roomNumber,
         guest_name: '',
         guest_phone: '',
+        guest_alt_phone: '',
+        guest_email: '',
+        guest_address: '',
+        guest_city: '',
+        guest_state: '',
+        guest_country: '',
+        guest_pincode: '',
+        guest_nationality: '',
+        guest_id_type: '',
+        guest_id_number: '',
+        company_name: '',
+        company_gst: '',
+        adults: 1,
+        children: 0,
+        pets: 0,
+        purpose_of_visit: '',
+        vehicle_number: '',
+        special_requests: '',
+        notes: '',
         booking_type: 'Walk-in',
         ota_source: '',
         room_price: 0,
@@ -196,10 +259,11 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
   const otaSources = ['Booking.com', 'MakeMyTrip', 'Agoda', 'Expedia', 'Goibibo', 'Others'];
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto">
-          <motion.div
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <div key="booking-modal-root" className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto">
+            <motion.div
             key="booking-modal-overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -360,6 +424,120 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
                     </motion.div>
                   )}
 
+                  {/* Advanced Guest Details Toggle */}
+                  <div className="border-t border-slate-200 pt-4 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvanced(!showAdvanced)}
+                      className="flex items-center justify-between w-full text-left"
+                    >
+                      <span className="text-sm font-bold text-indigo-600">Advanced Guest & Booking Details</span>
+                      {showAdvanced ? <ChevronUp className="w-5 h-5 text-indigo-600" /> : <ChevronDown className="w-5 h-5 text-indigo-600" />}
+                    </button>
+
+                    <AnimatePresence>
+                      {showAdvanced && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="space-y-4 pt-4 pb-2">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Alt Phone</label>
+                                <input type="text" value={formData.guest_alt_phone} onChange={e => setFormData({ ...formData, guest_alt_phone: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Email</label>
+                                <input type="email" value={formData.guest_email} onChange={e => setFormData({ ...formData, guest_email: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">Address</label>
+                              <input type="text" value={formData.guest_address} onChange={e => setFormData({ ...formData, guest_address: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">City</label>
+                                <input type="text" value={formData.guest_city} onChange={e => setFormData({ ...formData, guest_city: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">State</label>
+                                <input type="text" value={formData.guest_state} onChange={e => setFormData({ ...formData, guest_state: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Country</label>
+                                <input type="text" value={formData.guest_country} onChange={e => setFormData({ ...formData, guest_country: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Pincode</label>
+                                <input type="text" value={formData.guest_pincode} onChange={e => setFormData({ ...formData, guest_pincode: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">ID Type</label>
+                                <input type="text" value={formData.guest_id_type} onChange={e => setFormData({ ...formData, guest_id_type: e.target.value })} placeholder="Aadhaar/Passport" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">ID Number</label>
+                                <input type="text" value={formData.guest_id_number} onChange={e => setFormData({ ...formData, guest_id_number: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Company Name</label>
+                                <input type="text" value={formData.company_name} onChange={e => setFormData({ ...formData, company_name: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Company GST</label>
+                                <input type="text" value={formData.company_gst} onChange={e => setFormData({ ...formData, company_gst: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-4">
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Adults</label>
+                                <input type="number" min="1" value={formData.adults} onChange={e => setFormData({ ...formData, adults: Number(e.target.value) })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Children</label>
+                                <input type="number" min="0" value={formData.children} onChange={e => setFormData({ ...formData, children: Number(e.target.value) })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Pets</label>
+                                <input type="number" min="0" value={formData.pets} onChange={e => setFormData({ ...formData, pets: Number(e.target.value) })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Vehicle Number</label>
+                                <input type="text" value={formData.vehicle_number} onChange={e => setFormData({ ...formData, vehicle_number: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Purpose of Visit</label>
+                                <input type="text" value={formData.purpose_of_visit} onChange={e => setFormData({ ...formData, purpose_of_visit: e.target.value })} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">Special Requests</label>
+                              <textarea value={formData.special_requests} onChange={e => setFormData({ ...formData, special_requests: e.target.value })} rows={2} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-xs font-bold text-slate-500 mb-1">Internal Notes</label>
+                              <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} rows={2} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none" />
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
 
                 </div>
 
@@ -486,6 +664,7 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
           </motion.div>
         </div>
       )}
+      </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
@@ -578,6 +757,6 @@ export default function BookingModal({ isOpen, onClose, roomNumber, booking }: B
           </div>
         )}
       </AnimatePresence>
-    </AnimatePresence>
+    </>
   );
 }

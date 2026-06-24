@@ -212,7 +212,7 @@ export default function InvoiceList() {
 
              return (
               <motion.div
-                key={`invoice-card-${invoice.id || 'new'}-${invoice.invoice_number || 'draft'}`}
+                key={`invoice-card-${invoice.id || 'new'}-${invoice.invoice_number || 'draft'}-${idx}`}
                 layout
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

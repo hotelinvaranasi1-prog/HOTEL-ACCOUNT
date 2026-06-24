@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import emailjs from '@emailjs/browser';
-import { X, Loader2, Save, Printer, Download, Plus, Trash2, Send, Share2, Sparkles } from 'lucide-react';
+import { X, Loader2, Save, Printer, Download, Plus, Trash2, Send, Share2, Sparkles, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Invoice, InvoiceRoomRow, InvoiceSummaryData, InvoicePaymentData, Booking } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
@@ -57,10 +57,28 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [hotelDetails, setHotelDetails] = useState<any>({
     name: 'HOTEL IN VARANASI',
-    address: 'andharapull varanasi, Varanasi, 221002, Uttar Pradesh, India',
+    address1: 'andharapull varanasi',
+    address2: '',
+    city: 'Varanasi',
+    state: 'Uttar Pradesh',
+    pincode: '221002',
+    country: 'India',
     phone: '+91 96966 62679',
+    whatsapp: '',
     email: 'hotelinvaranasil@gmail.com',
-    logo: ''
+    website: '',
+    gstin: '',
+    pan: '',
+    logo: '',
+    instagram: '',
+    facebook: '',
+    twitter: '',
+    invoice_terms: '',
+    footer_message: '© Hotel Name',
+    best_regards: 'Best Regards,\nHotel Name',
+    signature: '',
+    upi_id: '',
+    qr: ''
   });
 
   useEffect(() => {
@@ -68,15 +86,31 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
     const fetchSettingsData = async () => {
       try {
         const settings = await getSettings();
-        if (settings.hotel_name) {
-          setHotelDetails({
-            name: settings.hotel_name || 'HOTEL IN VARANASI',
-            address: settings.hotel_address || 'andharapull varanasi, Varanasi, 221002, Uttar Pradesh, India',
-            phone: settings.hotel_phone || '+91 96966 62679',
-            email: settings.hotel_email || 'hotelinvaranasil@gmail.com',
-            logo: settings.hotel_logo || ''
-          });
-        }
+        setHotelDetails({
+          name: settings.hotel_name || 'HOTEL IN VARANASI',
+          address1: settings.hotel_address1 || settings.hotel_address || 'andharapull varanasi',
+          address2: settings.hotel_address2 || '',
+          city: settings.hotel_city || 'Varanasi',
+          state: settings.hotel_state || 'Uttar Pradesh',
+          pincode: settings.hotel_pincode || '221002',
+          country: settings.hotel_country || 'India',
+          phone: settings.hotel_phone || '+91 96966 62679',
+          whatsapp: settings.hotel_whatsapp || '',
+          email: settings.hotel_email || 'hotelinvaranasil@gmail.com',
+          website: settings.hotel_website || '',
+          gstin: settings.hotel_gstin || '',
+          pan: settings.hotel_pan || '',
+          logo: settings.hotel_logo || '',
+          instagram: settings.hotel_instagram || '',
+          facebook: settings.hotel_facebook || '',
+          twitter: settings.hotel_twitter || '',
+          invoice_terms: settings.hotel_invoice_terms || '',
+          footer_message: settings.hotel_footer_message || '© Hotel Name',
+          best_regards: settings.hotel_best_regards || 'Best Regards,\nHotel Name',
+          signature: settings.hotel_signature || '',
+          upi_id: settings.hotel_upi_id || '',
+          qr: settings.hotel_qr || ''
+        });
       } catch (err) {
         console.error(err);
       }
@@ -85,6 +119,14 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
   }, []);
 
   useEffect(() => {
+    const generateInvoiceNumber = () => {
+      const date = new Date();
+      const year = date.getFullYear().toString().slice(-2);
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      return `INV-${year}${month}-${random}`;
+    };
+
     if (invoice) {
       setFormData({
         ...invoice,
@@ -99,6 +141,7 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
 
       setFormData({
         ...formData,
+        invoice_number: formData.invoice_number || generateInvoiceNumber(),
         booking_id: booking.id,
         guest_name: booking.guest_name || '',
         guest_phone: '', // Not in booking currently
@@ -126,6 +169,8 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
           discount: booking.discount || 0
         }
       });
+    } else if (isOpen && !formData.invoice_number) {
+      setFormData(prev => ({ ...prev, invoice_number: generateInvoiceNumber() }));
     }
   }, [invoice, booking, isOpen]);
 
@@ -206,127 +251,203 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
   };
 
     const createInvoicePDF = () => {
-    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-    const pageWidth = doc.internal.pageSize.width;
-    const margin = 15;
+    const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 30;
     const contentWidth = pageWidth - (margin * 2);
-
-    // Color Palette
-    const colors = {
-      primary: [15, 23, 42] as [number, number, number], // Slate 900
-      indigo: [79, 70, 229] as [number, number, number], // Indigo 600
-      text: [71, 85, 105] as [number, number, number], // Slate 600
-      light: [241, 245, 249] as [number, number, number], // Slate 100
-      white: [255, 255, 255] as [number, number, number],
-    };
-
-    // Helper for currency in PDF to avoid font issues with ₹
-    const formatPDFCurrency = (amount: number) => {
-        return `INR ${amount.toFixed(2)}`;
-    };
-
-    // 1. Header
-    doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-    doc.rect(0, 0, pageWidth, 40, 'F');
-    doc.setTextColor(colors.white[0], colors.white[1], colors.white[2]);
     
-    doc.setFontSize(24);
+    // Theme Colors
+    const primaryColor = [77, 163, 217] as [number, number, number]; // #4DA3D9
+    const borderColor = [191, 199, 207] as [number, number, number]; // #BFC7CF
+    const textColor = [51, 51, 51] as [number, number, number];
+    const lightGray = [245, 245, 245] as [number, number, number];
+
+    const formatCurrency = (amount: number) => `INR ${amount.toFixed(2)}`;
+
+    // 1. Header Background & Branding
+    doc.setFillColor(...primaryColor);
+    doc.rect(0, 0, pageWidth, 85, 'F'); // 85pt header height
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text(hotelDetails?.name?.toUpperCase() || 'HOTEL IN VARANASI', margin, 20);
     
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text(hotelDetails?.address || '', margin, 28);
-    doc.text(`${hotelDetails?.phone} | ${hotelDetails?.email}`, margin, 33);
+    // Try to load logo if exists, else text
+    if (hotelDetails?.logo) {
+       try {
+         // jsPDF addImage signature: addImage(imageData, format, x, y, width, height)
+         doc.addImage(hotelDetails.logo, 'PNG', margin, 15, 140, 55);
+       } catch(e) {
+         doc.text(hotelDetails?.name?.toUpperCase() || 'HOTEL', margin, 50);
+       }
+    } else {
+       doc.text(hotelDetails?.name?.toUpperCase() || 'HOTEL', margin, 50);
+    }
 
     // Invoice Meta
+    doc.setFontSize(14);
+    doc.text('TAX INVOICE', pageWidth - margin, 35, { align: 'right' });
     doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('TAX INVOICE', pageWidth - margin, 15, { align: 'right' });
-    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text(`#${formData.invoice_number || '---'}`, pageWidth - margin, 22, { align: 'right' });
-    doc.text(`Date: ${formData.invoice_date || ''}`, pageWidth - margin, 27, { align: 'right' });
+    doc.text(`Invoice No: ${formData.invoice_number}`, pageWidth - margin, 55, { align: 'right' });
+    doc.text(`Date: ${formData.invoice_date}`, pageWidth - margin, 70, { align: 'right' });
 
-    let currentY = 50;
-
-    // 2. Billing Info
-    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+    let currentY = 110;
+    
+    // 2. Hotel Details (Left)
+    doc.setTextColor(...textColor);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FROM:', margin, currentY);
+    
     doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('BILLED TO:', margin, currentY);
-    doc.text('BOOKING DETAILS:', pageWidth / 2 + margin, currentY);
-    
-    currentY += 6;
-    doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
     doc.setFont('helvetica', 'normal');
-    doc.text(formData.guest_name || 'Guest', margin, currentY);
-    doc.text(`Source: ${formData.booking_source || '---'}`, pageWidth / 2 + margin, currentY);
+    currentY += 15;
+    doc.text(hotelDetails?.name || '', margin, currentY); currentY += 14;
+    if(hotelDetails?.address1) { doc.text(hotelDetails.address1, margin, currentY); currentY += 14; }
+    if(hotelDetails?.address2) { doc.text(hotelDetails.address2, margin, currentY); currentY += 14; }
+    const cityState = [hotelDetails?.city, hotelDetails?.state, hotelDetails?.pincode].filter(Boolean).join(', ');
+    if (cityState) { doc.text(cityState, margin, currentY); currentY += 14; }
+    if (hotelDetails?.phone) { doc.text(`Phone: ${hotelDetails.phone}`, margin, currentY); currentY += 14; }
+    if (hotelDetails?.email) { doc.text(`Email: ${hotelDetails.email}`, margin, currentY); currentY += 14; }
+    if (hotelDetails?.gstin) { doc.text(`GSTIN: ${hotelDetails.gstin}`, margin, currentY); currentY += 14; }
+    if (hotelDetails?.pan) { doc.text(`PAN: ${hotelDetails.pan}`, margin, currentY); currentY += 14; }
+
+    const lastLeftY = currentY;
+
+    // 3. Guest Details (Right)
+    const rightColX = pageWidth / 2 + 20;
+    let rightY = 110;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('BILL TO:', rightColX, rightY);
+    rightY += 15;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(formData.guest_name || 'Guest Name', rightColX, rightY); rightY += 14;
+    if (formData.guest_address) { 
+        const splitAddr = doc.splitTextToSize(formData.guest_address, contentWidth / 2 - 20);
+        doc.text(splitAddr, rightColX, rightY); 
+        rightY += (splitAddr.length * 14); 
+    }
+    if (formData.guest_phone) { doc.text(`Phone: ${formData.guest_phone}`, rightColX, rightY); rightY += 14; }
+    if (formData.guest_email) { doc.text(`Email: ${formData.guest_email}`, rightColX, rightY); rightY += 14; }
+
+    currentY = Math.max(lastLeftY, rightY) + 20;
+
+    // 4. Stay Information section header
+    doc.setFillColor(...primaryColor);
+    doc.rect(margin, currentY, contentWidth, 35, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.text('STAY INFORMATION', margin + 10, currentY + 23);
     
-    currentY += 5;
-    doc.text(formData.guest_phone || '', margin, currentY);
-    doc.text(`${formData.check_in || '---'} to ${formData.check_out || '---'}`, pageWidth / 2 + margin, currentY);
+    currentY += 55;
+    doc.setTextColor(...textColor);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    
+    doc.text(`Check-In: ${formData.check_in || ''}`, margin, currentY);
+    doc.text(`Check-Out: ${formData.check_out || ''}`, margin + 160, currentY);
+    doc.text(`Adults/Children: ${formData.adults || 1} / ${formData.children || 0}`, margin + 320, currentY);
+    currentY += 25;
 
-    currentY += 10;
-
-    // 3. Room & Charges Table
+    // 5. Charges Table
     autoTable(doc, {
       startY: currentY,
-      tableWidth: contentWidth,
       margin: { left: margin, right: margin },
-      head: [['Description', 'Date', 'Price', 'Nights', 'Amount']],
+      head: [['Description', 'Date', 'Rate', 'Qty/Nights', 'Amount']],
       body: formData.room_data.map((r: any) => [
-        r.type, 
-        r.date, 
-        formatPDFCurrency(r.price), 
-        r.nights.toString(), 
-        formatPDFCurrency(r.amount)
+        r.type,
+        r.date,
+        formatCurrency(r.price),
+        r.nights.toString(),
+        formatCurrency(r.amount)
       ]),
-      headStyles: { fillColor: colors.primary, textColor: colors.white, fontSize: 9 },
-      styles: { fontSize: 9, cellPadding: 2, overflow: 'linebreak', halign: 'left' },
-      columnStyles: {
-          0: { cellWidth: 50 },
-          1: { cellWidth: 30 },
-          2: { cellWidth: 30, halign: 'right' },
-          3: { cellWidth: 20, halign: 'center' },
-          4: { cellWidth: 30, halign: 'right' }
-      }
+      headStyles: { fillColor: primaryColor, textColor: 255, fontSize: 13, fontStyle: 'bold' },
+      styles: { fontSize: 10, cellPadding: 8, textColor: textColor, lineColor: borderColor, lineWidth: 1 },
+      theme: 'grid',
     });
 
-    currentY = (doc as any).lastAutoTable.finalY + 10;
-
-    // 4. Financial Summary
+    currentY = (doc as any).lastAutoTable.finalY + 20;
+    
+    // 6 & 7 & 8 & 9. Financial Summary
     autoTable(doc, {
       startY: currentY,
-      tableWidth: 80,
-      margin: { left: pageWidth - margin - 80 },
+      margin: { left: pageWidth - margin - 220 },
+      tableWidth: 220,
       body: [
-        ['Subtotal', formatPDFCurrency(formData.summary_data.subtotal)],
-        [`GST (${formData.summary_data.gstPercent}%)`, formatPDFCurrency(formData.summary_data.gstAmount)],
-        ['Extra Charges', formatPDFCurrency(formData.summary_data.extraCharges)],
-        ['Discount', formatPDFCurrency(formData.summary_data.discount)],
-        ['NET TOTAL', formatPDFCurrency(formData.summary_data.netTotal)],
-        ['Total Paid', formatPDFCurrency(formData.payment_data.totalPaid)],
-        ['BALANCE DUE', formatPDFCurrency(formData.payment_data.dueAmount)]
+        ['Subtotal:', formatCurrency(formData.summary_data.subtotal)],
+        [`CGST (${formData.summary_data.gstPercent / 2}%):`, formatCurrency(formData.summary_data.gstAmount / 2)],
+        [`SGST (${formData.summary_data.gstPercent / 2}%):`, formatCurrency(formData.summary_data.gstAmount / 2)],
+        ['Extra Charges:', formatCurrency(formData.summary_data.extraCharges)],
+        ['Discount:', formatCurrency(formData.summary_data.discount)],
+        ['NET TOTAL:', formatCurrency(formData.summary_data.netTotal)],
+        ['Paid Amount:', formatCurrency(formData.payment_data.totalPaid)],
+        ['BALANCE OWING:', formatCurrency(formData.payment_data.dueAmount)]
       ],
       theme: 'plain',
-      styles: { fontSize: 9, cellPadding: 1, halign: 'right' },
-      columnStyles: { 0: { fontStyle: 'bold', halign: 'left' }, 1: { fontStyle: 'bold', halign: 'right' } },
+      styles: { fontSize: 10, cellPadding: 6, textColor: textColor },
+      columnStyles: {
+        0: { halign: 'right', fontStyle: 'bold' },
+        1: { halign: 'right' }
+      },
       didParseCell: (data) => {
-        if (data.row.index === 4 || data.row.index === 6) { 
-          data.cell.styles.fillColor = colors.light;
+        if (data.row.index === 5 || data.row.index === 7) {
+          data.cell.styles.fillColor = lightGray;
+          data.cell.styles.fontStyle = 'bold';
         }
       }
     });
 
-    // 5. Terms
-    currentY = (doc as any).lastAutoTable.finalY + 10;
-    doc.setTextColor(colors.text[0], colors.text[1], colors.text[2]);
-    doc.setFontSize(8);
-    doc.text('TERMS & CONDITIONS:', margin, currentY);
-    currentY += 4;
-    const splitTerms = doc.splitTextToSize(formData.comments || DEFAULT_TERMS, contentWidth);
+    currentY = (doc as any).lastAutoTable.finalY + 40;
+
+    // 10. Terms and Conditions
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Terms and Conditions', margin, currentY);
+    currentY += 18;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const terms = hotelDetails?.invoice_terms || formData.comments || 'Standard terms apply.';
+    const splitTerms = doc.splitTextToSize(terms, contentWidth);
     doc.text(splitTerms, margin, currentY);
+    
+    currentY += splitTerms.length * 14 + 30;
+
+    // 11. Best Regards Section
+    if (currentY > pageHeight - 120) {
+       doc.addPage();
+       currentY = 50;
+    }
+    
+    const regards = hotelDetails?.best_regards || 'Best Regards,\nHotel Management';
+    const splitRegards = doc.splitTextToSize(regards, contentWidth);
+    doc.text(splitRegards, margin, currentY);
+    
+    if (hotelDetails?.signature) {
+       try {
+         doc.addImage(hotelDetails.signature, 'PNG', margin, currentY + (splitRegards.length * 14) + 10, 120, 40);
+       } catch (e) {}
+    }
+    
+    // 12. Footer
+    const footerHeight = 40;
+    const footerY = pageHeight - footerHeight;
+    doc.setFillColor(...lightGray);
+    doc.rect(0, footerY, pageWidth, footerHeight, 'F');
+    doc.setTextColor(...textColor);
+    doc.setFontSize(9);
+    doc.text(hotelDetails?.footer_message || '© Hotel Name', margin, footerY + 24);
+    
+    // Footer social links
+    const links = [hotelDetails?.website, hotelDetails?.instagram, hotelDetails?.facebook, hotelDetails?.twitter]
+        .filter(Boolean).join('  |  ');
+    if (links) {
+        doc.text(links, pageWidth - margin, footerY + 24, { align: 'right' });
+    }
 
     return doc;
   };
@@ -379,6 +500,33 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
       alert("Email Failed: " + errorMessage);
     } finally {
       setIsSendingEmail(false);
+    }
+  };
+
+  const handleShareWhatsApp = async () => {
+    try {
+      const doc = createInvoicePDF();
+      const pdfBlob = doc.output('blob');
+      const filename = `Invoice_${formData.invoice_number || 'Draft'}.pdf`;
+      const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+      
+      const phone = formData.guest_phone ? formData.guest_phone.replace(/\D/g, '') : '';
+      const text = `Hello ${formData.guest_name || 'Guest'},\n\nPlease find your invoice (${formData.invoice_number || 'Draft'}) attached.\n\nBest regards,\n${hotelDetails?.name || 'Hotel Management'}`;
+
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: `Invoice ${formData.invoice_number || 'Draft'}`,
+          text: text,
+          files: [file]
+        });
+      } else {
+         // Fallback for unsupported browsers: download the PDF and open WhatsApp Web/App
+         doc.save(filename);
+         const waUrl = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`;
+         window.open(waUrl, '_blank');
+      }
+    } catch (err) {
+      console.error('Error sharing to WhatsApp:', err);
     }
   };
 
@@ -708,6 +856,13 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
                   title="Email PDF to Guest"
                >
                   {isSendingEmail ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+               </button>
+               <button 
+                  onClick={handleShareWhatsApp}
+                  className="p-4 bg-white text-emerald-600 rounded-2xl border border-slate-200 hover:bg-emerald-50 transition-all shadow-sm"
+                  title="Share via WhatsApp"
+               >
+                  <MessageCircle className="w-5 h-5" />
                </button>
                <button 
                   onClick={() => window.print()}

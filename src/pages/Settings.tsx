@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Send, Bell, Shield, Save, Loader2, CheckCircle2, Hotel, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Bell, Shield, Save, Loader2, CheckCircle2, Hotel, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { getSettings, saveSettings } from '../services/firebaseService';
@@ -9,11 +9,38 @@ export default function Settings() {
     telegram_enabled: 'false',
     telegram_bot_token: '',
     telegram_chat_id: '',
+    
+    // Hotel Details
     hotel_name: '',
-    hotel_address: '',
+    hotel_address1: '',
+    hotel_address2: '',
+    hotel_city: '',
+    hotel_state: '',
+    hotel_pincode: '',
+    hotel_country: '',
     hotel_phone: '',
+    hotel_whatsapp: '',
     hotel_email: '',
+    hotel_website: '',
+    hotel_gstin: '',
+    hotel_pan: '',
+    
+    // Media & Links
     hotel_logo: '',
+    hotel_instagram: '',
+    hotel_facebook: '',
+    hotel_twitter: '',
+    hotel_google_maps: '',
+    
+    // Invoice Text & Formatting
+    hotel_invoice_terms: '',
+    hotel_footer_message: '© 2024 Hotel Name',
+    hotel_best_regards: 'Best Regards,\nHotel Name',
+    hotel_signature: '',
+    
+    // Payment
+    hotel_upi_id: '',
+    hotel_qr: '',
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -23,6 +50,10 @@ export default function Settings() {
     const fetchSettingsData = async () => {
       try {
         const data = await getSettings();
+        // Handle migration from old 'hotel_address' to 'hotel_address1' if necessary
+        if (data.hotel_address && !data.hotel_address1) {
+          data.hotel_address1 = data.hotel_address;
+        }
         setSettings(prev => ({ ...prev, ...data }));
       } catch (err) {
         console.error(err);
@@ -46,6 +77,83 @@ export default function Settings() {
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSettings({ ...settings, [field]: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const InputField = ({ label, field, placeholder, type = 'text', colSpan = 1 }: any) => (
+    <div className={colSpan === 2 ? "md:col-span-2" : ""}>
+      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">{label}</label>
+      <input
+        type={type}
+        value={settings[field as keyof typeof settings]}
+        onChange={e => setSettings({ ...settings, [field]: e.target.value })}
+        placeholder={placeholder}
+        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
+      />
+    </div>
+  );
+
+  const TextAreaField = ({ label, field, placeholder, rows = 3, colSpan = 2 }: any) => (
+    <div className={colSpan === 2 ? "md:col-span-2" : ""}>
+      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">{label}</label>
+      <textarea
+        value={settings[field as keyof typeof settings]}
+        onChange={e => setSettings({ ...settings, [field]: e.target.value })}
+        placeholder={placeholder}
+        rows={rows}
+        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
+      />
+    </div>
+  );
+
+  const ImageUploadField = ({ label, field }: any) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const value = settings[field as keyof typeof settings] as string;
+
+    return (
+      <div className="md:col-span-2">
+        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">{label}</label>
+        <div className="flex items-center gap-4">
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            ref={fileInputRef}
+            onChange={(e) => handleImageUpload(e, field)}
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl hover:bg-slate-100 transition-colors flex items-center gap-2 font-bold text-slate-700"
+          >
+            <ImageIcon className="w-5 h-5" />
+            Upload Image
+          </button>
+          
+          <input
+            type="text"
+            value={value}
+            onChange={e => setSettings({ ...settings, [field]: e.target.value })}
+            placeholder="Or enter image URL"
+            className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-sm"
+          />
+          {value && (
+            <div className="w-16 h-16 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 flex items-center justify-center shrink-0">
+              <img src={value} alt="Preview" className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="h-64 flex items-center justify-center">
@@ -55,92 +163,80 @@ export default function Settings() {
   }
 
   return (
-    <div className="max-w-3xl space-y-8">
+    <div className="max-w-4xl space-y-8 pb-12">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-        <p className="text-slate-500">Configure notifications and system preferences.</p>
+        <p className="text-slate-500">Configure hotel profile, invoice branding, and system preferences.</p>
       </div>
 
       <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
         <div className="p-8 space-y-12">
-          {/* Hotel Details Section */}
+          
+          {/* 1. Hotel Details */}
           <div className="space-y-6">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
               <div className="bg-indigo-50 p-2 rounded-xl">
                 <Hotel className="w-6 h-6 text-indigo-600" />
               </div>
-              <h2 className="text-lg font-bold text-slate-900">Hotel Profile</h2>
+              <h2 className="text-xl font-bold text-slate-900">1. Hotel Information</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField label="Hotel Name" field="hotel_name" placeholder="Grand Vista Hotel" colSpan={2} />
+              <InputField label="Address Line 1" field="hotel_address1" placeholder="123 Main Street" colSpan={2} />
+              <InputField label="Address Line 2" field="hotel_address2" placeholder="Suite 100" colSpan={2} />
+              <InputField label="City" field="hotel_city" placeholder="Varanasi" />
+              <InputField label="State" field="hotel_state" placeholder="Uttar Pradesh" />
+              <InputField label="Pincode / Zip Code" field="hotel_pincode" placeholder="221001" />
+              <InputField label="Country" field="hotel_country" placeholder="India" />
+              
+              <InputField label="Phone Number" field="hotel_phone" placeholder="+91 98765 43210" />
+              <InputField label="WhatsApp Number" field="hotel_whatsapp" placeholder="+91 98765 43210" />
+              <InputField label="Email Address" field="hotel_email" placeholder="contact@hotel.com" type="email" />
+              <InputField label="Website" field="hotel_website" placeholder="https://hotel.com" />
+              
+              <InputField label="GSTIN Number" field="hotel_gstin" placeholder="09AXXXXXX0000X1Z5" />
+              <InputField label="PAN Number" field="hotel_pan" placeholder="ABCDE1234F" />
+            </div>
+          </div>
+
+          {/* 2. Branding & Social */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <div className="bg-pink-50 p-2 rounded-xl">
+                <ImageIcon className="w-6 h-6 text-pink-600" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-900">2. Branding & Social Links</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Select Hotel</label>
-                <select
-                  value={settings.hotel_selection || 'Kashi'}
-                  onChange={e => setSettings({ ...settings, hotel_selection: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
-                >
-                  <option value="Kashi">Hotel in Kashi</option>
-                  <option value="Varanasi">Varanasi</option>
-                </select>
+              <ImageUploadField label="Hotel Logo" field="hotel_logo" />
+              
+              <InputField label="Instagram Link" field="hotel_instagram" placeholder="https://instagram.com/hotel" />
+              <InputField label="Facebook Link" field="hotel_facebook" placeholder="https://facebook.com/hotel" />
+              <InputField label="X/Twitter Link" field="hotel_twitter" placeholder="https://x.com/hotel" />
+              <InputField label="Google Maps Link" field="hotel_google_maps" placeholder="https://maps.app.goo.gl/..." />
+            </div>
+          </div>
+
+          {/* 3. Invoice Configuration */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <div className="bg-emerald-50 p-2 rounded-xl">
+                <Save className="w-6 h-6 text-emerald-600" />
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Hotel Name</label>
-                <input
-                  type="text"
-                  value={settings.hotel_name}
-                  onChange={e => setSettings({ ...settings, hotel_name: e.target.value })}
-                  placeholder="e.g. Grand Vista Hotel"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Hotel Address</label>
-                <textarea
-                  value={settings.hotel_address}
-                  onChange={e => setSettings({ ...settings, hotel_address: e.target.value })}
-                  placeholder="Full business address"
-                  rows={3}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Phone Number</label>
-                <input
-                  type="text"
-                  value={settings.hotel_phone}
-                  onChange={e => setSettings({ ...settings, hotel_phone: e.target.value })}
-                  placeholder="+91 98765 43210"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Email Address</label>
-                <input
-                  type="email"
-                  value={settings.hotel_email}
-                  onChange={e => setSettings({ ...settings, hotel_email: e.target.value })}
-                  placeholder="contact@hotel.com"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Hotel Logo URL</label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="text"
-                    value={settings.hotel_logo}
-                    onChange={e => setSettings({ ...settings, hotel_logo: e.target.value })}
-                    placeholder="https://example.com/logo.png (or base64)"
-                    className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium"
-                  />
-                  {settings.hotel_logo && (
-                    <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden border border-slate-200 flex items-center justify-center">
-                      <img src={settings.hotel_logo} alt="Logo Preview" className="max-w-full max-h-full object-contain" referrerPolicy="no-referrer" />
-                    </div>
-                  )}
-                </div>
-              </div>
+              <h2 className="text-xl font-bold text-slate-900">3. Invoice Content & Payments</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <TextAreaField label="Terms and Conditions" field="hotel_invoice_terms" placeholder="1. Checkout time is 11:00 AM..." rows={4} />
+              <InputField label="Footer Message" field="hotel_footer_message" placeholder="© 2024 Hotel Name" colSpan={2} />
+              <TextAreaField label="Best Regards Text" field="hotel_best_regards" placeholder="Best Regards,\nHotel Management" rows={3} />
+              
+              <ImageUploadField label="Signature Image (Optional)" field="hotel_signature" />
+              
+              <InputField label="UPI ID" field="hotel_upi_id" placeholder="hotel@upi" />
+              <ImageUploadField label="Payment QR Code (Optional)" field="hotel_qr" />
             </div>
           </div>
 
@@ -203,54 +299,9 @@ export default function Settings() {
               </motion.div>
             )}
           </div>
-
-          <div className="h-px bg-slate-100" />
-
-          {/* Email Integration Section */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="bg-emerald-50 p-2 rounded-xl">
-                <Send className="w-6 h-6 text-emerald-600" />
-              </div>
-              <h2 className="text-lg font-bold text-slate-900">Email (Gmail) Integration</h2>
-            </div>
-            
-            <div className="p-6 bg-slate-50 rounded-3xl border border-slate-200">
-              <p className="text-sm text-slate-600 leading-relaxed">
-                To send invoices directly from the app via your Gmail account, you need to configure environment variables in your deployment platform:
-              </p>
-              <ul className="mt-4 space-y-3">
-                <li className="flex items-start gap-3">
-                  <div className="mt-1 w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-400">1</div>
-                  <p className="text-xs text-slate-600">Set <code className="bg-white px-2 py-0.5 rounded border border-slate-200 font-mono text-indigo-600">GMAIL_USER</code> to your Gmail address.</p>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="mt-1 w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-400">2</div>
-                  <p className="text-xs text-slate-600">Set <code className="bg-white px-2 py-0.5 rounded border border-slate-200 font-mono text-indigo-600">GMAIL_APP_PASSWORD</code> to a 16-character App Password (not your regular password).</p>
-                </li>
-              </ul>
-              <div className="mt-6 p-4 bg-white rounded-2xl border border-indigo-100 flex items-center gap-3">
-                <div className="p-2 bg-indigo-50 rounded-lg">
-                  <Sparkles className="w-4 h-4 text-indigo-600" />
-                </div>
-                <p className="text-[11px] font-bold text-indigo-600 uppercase tracking-tight">Pro Tip: Generate an App Password in your Google Account Security settings under "2-Step Verification".</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="h-px bg-slate-100" />
-          <div className="space-y-6 opacity-50 pointer-events-none">
-            <div className="flex items-center gap-3">
-              <div className="bg-indigo-50 p-2 rounded-xl">
-                <Shield className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h2 className="text-lg font-bold text-slate-900">Security</h2>
-            </div>
-            <p className="text-sm text-slate-500 italic">Advanced security settings are coming soon.</p>
-          </div>
         </div>
 
-        <div className="p-8 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+        <div className="p-8 bg-slate-50 border-t border-slate-100 flex items-center justify-between sticky bottom-0 z-10">
           <div className="flex items-center gap-2">
             {showSuccess && (
               <motion.div 

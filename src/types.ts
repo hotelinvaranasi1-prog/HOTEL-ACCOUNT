@@ -30,6 +30,29 @@ export interface Booking {
   guest_name: string;
   guest_phone: string;
   
+  // New Guest Fields
+  guest_alt_phone?: string;
+  guest_email?: string;
+  guest_address?: string;
+  guest_city?: string;
+  guest_state?: string;
+  guest_country?: string;
+  guest_pincode?: string;
+  guest_nationality?: string;
+  guest_id_type?: string;
+  guest_id_number?: string;
+  company_name?: string;
+  company_gst?: string;
+
+  // New Booking Fields
+  adults?: number;
+  children?: number;
+  pets?: number;
+  purpose_of_visit?: string;
+  vehicle_number?: string;
+  special_requests?: string;
+  notes?: string;
+
   booking_type: BookingType;
   ota_source?: string; // e.g., Booking.com, Oyo
   
