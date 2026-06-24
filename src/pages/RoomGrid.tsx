@@ -71,9 +71,18 @@ export default function RoomGrid() {
     setIsProcessing(true);
     try {
       const currentMisc = Number(miscChargeBooking.misc_charges) || 0;
+      const newMiscCharges = currentMisc + Number(miscAmount);
+      const totalAmount = (Number(miscChargeBooking.room_price) || 0) + newMiscCharges - (Number(miscChargeBooking.discount) || 0);
+      const totalPaid = (Number(miscChargeBooking.cash_paid) || 0) + (Number(miscChargeBooking.online_paid) || 0);
+      const balanceAmount = totalAmount - totalPaid;
+      const paymentStatus = balanceAmount <= 0 ? 'Paid' : (totalPaid > 0 ? 'Partial' : 'Unpaid');
+
       await updateBooking(String(miscChargeBooking.id), {
         ...miscChargeBooking,
-        misc_charges: currentMisc + Number(miscAmount)
+        misc_charges: newMiscCharges,
+        total_amount: totalAmount,
+        balance_amount: balanceAmount,
+        payment_status: paymentStatus
       });
       
       setMiscChargeBooking(null);
@@ -93,7 +102,7 @@ export default function RoomGrid() {
   
   const dailySummary = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
-    const todayBookings = bookings.filter(b => b.date === today);
+    const todayBookings = bookings.filter(b => b.date === today && b.booking_status !== 'Cancelled');
     return todayBookings.reduce((acc, b) => ({
       today_collection_cash: acc.today_collection_cash + (b.cash_paid || 0),
       today_collection_online: acc.today_collection_online + (b.online_paid || 0),
@@ -133,7 +142,7 @@ export default function RoomGrid() {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          {['All', 'Occupied', 'Vacant', 'Due Payment', 'Online Paid', 'Agent Booking'].map(f => (
+          {['All', 'Occupied', 'Vacant', 'Due Payment', 'Online Paid'].map(f => (
             <button 
               key={f}
               onClick={() => setFilter(f)}
@@ -187,7 +196,6 @@ export default function RoomGrid() {
                   case 'Vacant': return status === 'Available';
                   case 'Due Payment': return booking && booking.balance_amount > 0;
                   case 'Online Paid': return booking && booking.payment_history?.some(p => p.mode === 'Online');
-                  case 'Agent Booking': return booking && booking.booking_type === 'Agent';
                   default: return true;
                 }
               });

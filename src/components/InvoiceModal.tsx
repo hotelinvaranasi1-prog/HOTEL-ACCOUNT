@@ -7,6 +7,7 @@ import { formatCurrency, cn } from '../lib/utils';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getSettings, createInvoice, updateInvoice, updateBooking } from '../services/firebaseService';
+import { getRoomType } from '../constants';
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -144,12 +145,16 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
         invoice_number: formData.invoice_number || generateInvoiceNumber(),
         booking_id: booking.id,
         guest_name: booking.guest_name || '',
-        guest_phone: '', // Not in booking currently
+        guest_phone: booking.guest_phone || '',
+        guest_email: booking.guest_email || '',
+        guest_address: booking.guest_address || '',
+        adults: booking.adults || 1,
+        children: booking.children || 0,
         check_in: b_check_in,
         check_out: b_check_out,
         room_data: [
           { 
-            type: `Room ${booking.room_number}`, 
+            type: `${getRoomType(booking.room_number)} (${booking.room_number})`, 
             date: b_check_in, 
             price: booking.room_price, 
             nights: stay_nights, 
@@ -258,8 +263,8 @@ export default function InvoiceModal({ isOpen, onClose, invoice, booking, onSave
     const contentWidth = pageWidth - (margin * 2);
     
     // Theme Colors
-    const primaryColor = [77, 163, 217] as [number, number, number]; // #4DA3D9
-    const borderColor = [191, 199, 207] as [number, number, number]; // #BFC7CF
+    const primaryColor = [115, 175, 235] as [number, number, number]; // Lighter Blue
+    const borderColor = [200, 210, 220] as [number, number, number]; 
     const textColor = [51, 51, 51] as [number, number, number];
     const lightGray = [245, 245, 245] as [number, number, number];
 

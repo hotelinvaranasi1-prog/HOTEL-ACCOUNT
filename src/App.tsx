@@ -52,18 +52,18 @@ export default function App() {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-40 w-64 bg-white border-r transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0",
+        "fixed inset-y-0 left-0 z-40 w-64 bg-[#0B1528] border-r border-[#152238] transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="h-full flex flex-col">
-          <div className="hidden md:flex items-center gap-3 px-6 py-8 border-b">
-            <div className="bg-indigo-600 p-2 rounded-lg">
+          <div className="hidden md:flex items-center gap-3 px-6 py-8 border-b border-[#152238]">
+            <div className="bg-indigo-600 p-2.5 rounded-xl">
               <Hotel className="w-6 h-6 text-white" />
             </div>
-            <span className="font-bold text-xl text-slate-800 tracking-tight">Hotel Master</span>
+            <span className="font-extrabold text-xl text-white tracking-tight">Hotel Master</span>
           </div>
 
-          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+          <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
             {navItems.map((item) => (
               <button
                 key={`nav-${item.id}`}
@@ -72,14 +72,19 @@ export default function App() {
                   setIsSidebarOpen(false);
                 }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
+                  "w-full flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 group text-left",
                   currentPage === item.id 
-                    ? "bg-indigo-50 text-indigo-600 font-semibold" 
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                    ? "bg-[#1A2E4C] text-indigo-400 font-bold shadow-md shadow-black/10" 
+                    : "text-slate-400 hover:bg-[#111F36] hover:text-slate-200"
                 )}
               >
-                <item.icon className="w-5 h-5" />
-                {item.label}
+                <div className={cn(
+                  "p-1.5 rounded-lg transition-colors",
+                  currentPage === item.id ? "bg-indigo-600/20 text-indigo-400" : "bg-[#14233C] text-slate-400 group-hover:text-slate-200"
+                )}>
+                  <item.icon className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-semibold">{item.label}</span>
               </button>
             ))}
           </nav>
@@ -89,7 +94,7 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 overflow-auto p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
-          {currentPage === 'dashboard' && <Dashboard key="dashboard-page" />}
+          {currentPage === 'dashboard' && <Dashboard key="dashboard-page" onNavigate={setCurrentPage} />}
           {currentPage === 'room-grid' && <RoomGrid key="room-grid-page" />}
           {currentPage === 'schedule' && <Schedule key="schedule-page" />}
           {currentPage === 'bookings' && <BookingList key="bookings-page" />}
